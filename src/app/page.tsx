@@ -2,9 +2,8 @@
 
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
-import { m } from "framer-motion";
-import { u } from "framer-motion/client";
-import React, { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import React, { useEffect, useState } from "react";
 
 type Mode = "whites" | "blacks" | "chromatic";
 
@@ -62,7 +61,7 @@ export default function Home() {
     setStatus(`Chord generated: ${count} note${count > 1 ? "s" : ""}. Press Play.`);
   }
 
-  function playChord() {
+  function playCurrentChord() {
     if (!currentChord.length) {
       setStatus("Generate a chord first");
       return;
@@ -129,6 +128,8 @@ export default function Home() {
       }, 400);
     } else {
       setStatus("Wrong! Try again or press Play to hear it again.");
+      // remove wrong selections
+      setUserSelections((prev) => prev.filter((i) => currentChord.includes(i)));
     }
   }
 
@@ -144,61 +145,79 @@ export default function Home() {
   return (
     <main style={{ padding: 24, fontFamily: "Inter, system-ui, sans-serif" }}>
       <div className="mb-8">
-        <h1 className="text-3xl font-extrabold bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 text-transparent bg-clip-text w-fit">
-          Pitch Guess
-        </h1>
+
+        <div className="flex items-center mb-2 gap-3">
+          <Image
+            src="/logo.png"
+            alt="Pitch Logo"
+            width={48}
+            height={48}
+            className="inline-block align-middle h-8 w-auto"
+          />
+          <h1 className="text-3xl font-extrabold bg-linear-to-r from-primary via-purple-500 to-pink-500 text-transparent bg-clip-text w-fit">
+            Pitch Guess
+          </h1>
+        </div>
         <p className="text-sm text-gray-500 mt-1">
           Hear a chord and pick the notes. Train your ear — whites, blacks or chromatic.
         </p>
       </div>
 
-      <div className="flex items-center my-4 gap-4">
-        <Select
-          label="Mode"
-          fullWidth={false}
-          selectedKeys={[mode]}
-          selectionMode="single"
-          onSelectionChange={(keys) => setMode(Array.from(keys)[0] as Mode)}
-        >
-          <SelectItem key={"whites"}>Whites</SelectItem>
-          <SelectItem key={"blacks"}>Blacks</SelectItem>
-          <SelectItem key={"chromatic"}>Chromatic</SelectItem>
-        </Select>
+      <div className="flex flex-wrap items-center my-4 gap-4">
+        <div className="flex gap-4">
+          <Select
+            label="Mode"
+            fullWidth={false}
+            selectedKeys={[mode]}
+            selectionMode="single"
+            onSelectionChange={(keys) => setMode(Array.from(keys)[0] as Mode)}
+          >
+            <SelectItem key={"whites"}>Whites</SelectItem>
+            <SelectItem key={"blacks"}>Blacks</SelectItem>
+            <SelectItem key={"chromatic"}>Chromatic</SelectItem>
+          </Select>
 
-        <Select
-          label="Level"
-          fullWidth={false}
-          selectedKeys={[String(level)]}
-          selectionMode="single"
-          onSelectionChange={(keys) => setLevel(Number(Array.from(keys)[0]))}
-        >
-          <SelectItem key={"1"}>1</SelectItem>
-          <SelectItem key={"2"}>2</SelectItem>
-          <SelectItem key={"3"}>3</SelectItem>
-          <SelectItem key={"4"}>4</SelectItem>
-        </Select>
+          <Select
+            label="Level"
+            fullWidth={false}
+            selectedKeys={[String(level)]}
+            selectionMode="single"
+            onSelectionChange={(keys) => setLevel(Number(Array.from(keys)[0]))}
+          >
+            <SelectItem key={"1"}>1</SelectItem>
+            <SelectItem key={"2"}>2</SelectItem>
+            <SelectItem key={"3"}>3</SelectItem>
+            <SelectItem key={"4"}>4</SelectItem>
+          </Select>
+        </div>
 
-        <Button
-          onPress={generateChord}
-          className="gap-1"
-          startContent={<span className="material-symbols-outlined">autorenew</span>}
-        >
-          Generate
-        </Button>
-        <Button
-          onPress={playChord}
-          className="gap-1"
-          startContent={<span className="material-symbols-outlined">play_arrow</span>}
-        >
-          Play
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onPress={generateChord}
+            color="default"
+            variant="bordered"
+            className="gap-1"
+            startContent={<span className="material-symbols-outlined">autorenew</span>}
+          >
+            Generate
+          </Button>
+          <Button
+            onPress={playCurrentChord}
+            className="gap-1"
+            color="primary"
+            variant="shadow"
+            startContent={<span className="material-symbols-outlined">play_arrow</span>}
+          >
+            Play
+          </Button>
+        </div>
       </div>
 
       <div style={{ marginBottom: 12 }}>
         <strong>Status:</strong> {status}
       </div>
 
-      <div className="flex gap-2 flex-wrap mt-8">
+      <div className="flex flex-wrap items-center justify-center gap-8 gap-x-2 mt-8">
         {NOTES.map((note, index) => {
           const disabled = !availableIndices.includes(index);
           return (
@@ -234,10 +253,6 @@ export default function Home() {
 
 function RevealAnswer({ answer }: { answer: number[] }) {
   const [show, setShow] = useState(false);
-
-  useEffect(() => {
-    setShow(false);
-  }, [answer]);
 
   return (
     <div>
