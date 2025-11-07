@@ -2,6 +2,7 @@
 
 import { Button } from "@heroui/button";
 import { Select, SelectItem } from "@heroui/select";
+import { Switch } from "@heroui/switch";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 
@@ -27,7 +28,7 @@ const NOTES = NOTE_NAMES.map((name, i) => {
   const midi = 60 + i; // C4..B4
   const freq = 440 * Math.pow(2, (midi - 69) / 12);
   const isBlack = name.includes("#");
-  return { name, freq, isBlack };
+  return { id: i, name, freq, isBlack };
 });
 
 function sampleIndices(count: number, pool: number[]) {
@@ -43,9 +44,10 @@ function sampleIndices(count: number, pool: number[]) {
 export default function Home() {
   const [level, setLevel] = useState<number>(1); // 1..4
   const [mode, setMode] = useState<Mode>("whites");
-  const [currentChord, setCurrentChord] = useState<number[]>([]);
+  const [currentChord, setCurrentChord] = useState<{ index: number; octave: -1 | 0 | 1 }[]>([]);
   const [userSelections, setUserSelections] = useState<number[]>([]);
   const [status, setStatus] = useState<string>("Press Play to start");
+  const [playNotes, setPlayNotes] = useState<boolean>(false);
 
   const availableIndices = React.useMemo(() => {
     if (mode === "chromatic") return NOTES.map((_, i) => i);
@@ -55,7 +57,11 @@ export default function Home() {
 
   function generateChord() {
     const count = Math.max(1, Math.min(4, level));
-    const chord = sampleIndices(count, availableIndices);
+    const indices = sampleIndices(count, availableIndices);
+    const chord = indices.map((index) => {
+      const octave = ([-1, 0, 1] as const)[Math.floor(Math.random() * 3)];
+      return { index, octave } as const;
+    });
     setCurrentChord(chord);
     setUserSelections([]);
     setStatus(`Chord generated: ${count} note${count > 1 ? "s" : ""}. Press Play.`);
@@ -73,15 +79,15 @@ export default function Home() {
     const now = audioContext.currentTime;
     const duration = 0.9;
     const gainNode = audioContext.createGain();
-    gainNode.gain.value = 0.12;
+    gainNode.gain.value = 0.2;
     gainNode.connect(audioContext.destination);
 
     const oscillators: OscillatorNode[] = [];
     try {
-      currentChord.forEach((idx) => {
+      currentChord.forEach(({ index, octave }) => {
         const oscillatorNode = audioContext.createOscillator();
         oscillatorNode.type = "sine";
-        oscillatorNode.frequency.value = NOTES[idx].freq;
+        oscillatorNode.frequency.value = NOTES[index].freq * Math.pow(2, octave);
         oscillatorNode.connect(gainNode);
         oscillatorNode.start(now);
         oscillatorNode.stop(now + duration);
@@ -97,18 +103,47 @@ export default function Home() {
     }, duration * 1000 + 100);
   }
 
-  function toggleSelect(idx: number) {
+  function playNote(noteIndex: number) {
+    const audioContext = new window.AudioContext();
+    const gainNode = audioContext.createGain();
+    gainNode.gain.value = 0.2;
+    gainNode.connect(audioContext.destination);
+    
+    const oscillatorNode = audioContext.createOscillator();
+    oscillatorNode.type = "sine";
+    oscillatorNode.frequency.value = NOTES[noteIndex].freq;
+    oscillatorNode.connect(gainNode);
+    oscillatorNode.start();
+    oscillatorNode.stop(audioContext.currentTime + 0.5);
+  }
+
+  function toggleSelect(selectionIndex: number) {
     if (!currentChord.length) return;
+
     // allow toggling until user selected same number as chord length (we still allow deselect)
     setUserSelections((prev) => {
-      const has = prev.includes(idx);
-      let next = has ? prev.filter((p) => p !== idx) : [...prev, idx];
+      const isPresent = prev.includes(selectionIndex);
+
+      // deselect if already selected
+      if (isPresent) {
+        return prev.filter((p) => p !== selectionIndex);
+      }
+
+      // play note sound if enabled
+      if (playNotes) {
+        playNote(selectionIndex);
+      }
+
+      let next = [...prev, selectionIndex];
+
       // prevent more than chord length selected
       if (next.length > currentChord.length) next = next.slice(0, currentChord.length);
+
       // check for evaluation
       if (next.length === currentChord.length) {
-        evaluate(next);
+        next = evaluate(next);
       }
+
       return next;
     });
   }
@@ -120,17 +155,17 @@ export default function Home() {
   }
 
   function evaluate(selection: number[]) {
-    if (arraysEqualAsSets(selection, currentChord)) {
+    const chordIndices = currentChord.map((c) => c.index);
+    if (arraysEqualAsSets(selection, chordIndices)) {
       setStatus("Correct");
-      setTimeout(() => {
-        // generate a new chord automatically for the new level
-        setTimeout(generateChord, 150)
-      }, 400);
+      setTimeout(generateChord, 500);
     } else {
       setStatus("Wrong! Try again or press Play to hear it again.");
-      // remove wrong selections
-      setUserSelections((prev) => prev.filter((i) => currentChord.includes(i)));
+      // remove wrong selections (ignore octave when checking correctness)
+      selection = selection.filter((i) => chordIndices.includes(i));
     }
+
+    return selection;
   }
 
   // helper for rendering note buttons
@@ -189,6 +224,13 @@ export default function Home() {
             <SelectItem key={"3"}>3</SelectItem>
             <SelectItem key={"4"}>4</SelectItem>
           </Select>
+
+          <Switch
+            isSelected={playNotes}
+            onValueChange={setPlayNotes}
+          >
+            Play Notes
+          </Switch>
         </div>
 
         <div className="flex items-center gap-2">
@@ -217,7 +259,7 @@ export default function Home() {
         <strong>Status:</strong> {status}
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-8 gap-x-2 mt-8">
+      <div className="flex flex-wrap items-center justify-center gap-8 gap-x-2 mt-8 w-fit">
         {NOTES.map((note, index) => {
           const disabled = !availableIndices.includes(index);
           return (
@@ -251,8 +293,19 @@ export default function Home() {
   );
 }
 
-function RevealAnswer({ answer }: { answer: number[] }) {
+function RevealAnswer({ answer }: { answer: { index: number; octave: -1 | 0 | 1 }[] }) {
   const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    setShow(false);
+  }, [answer]);
+
+  const format = (noteInfo: { index: number; octave: -1 | 0 | 1 }) => {
+    const noteName = NOTES[noteInfo.index].name;
+    // show octave offset only when not 0
+    if (noteInfo.octave === 0) return noteName;
+    return `${noteName}${noteInfo.octave > 0 ? `+${noteInfo.octave}` : `${noteInfo.octave}`}`;
+  };
 
   return (
     <div>
@@ -269,7 +322,7 @@ function RevealAnswer({ answer }: { answer: number[] }) {
       </Button>
       {show && (
         <div>
-          Answer: {answer.map((i) => NOTES[i].name).join(", ")}
+          Answer: {answer.map(format).join(", ")}
         </div>
       )}
     </div>
