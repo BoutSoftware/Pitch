@@ -1,20 +1,16 @@
-ARG NODE_VERSION=22
 ARG IMAGE_NAME=oven/bun:1
-
-# ---------------------------- Installer Stage ---------------------------- #
-FROM ${IMAGE_NAME} AS installer
-WORKDIR /app
-COPY bun.lockb package.json ./
-RUN bun install
 
 # ---------------------------- Builder Stage ---------------------------- #
 FROM ${IMAGE_NAME} AS builder
 WORKDIR /app
-COPY --from=installer /app/node_modules ./node_modules
+
+COPY bun.lockb package*.json ./
+RUN bun install
+
 COPY . .
 
-ARG ENV_VARS
-RUN echo "$ENV_VARS" > .env
+# ARG ENV_VARS
+# RUN echo "$ENV_VARS" > .env
 
 RUN bun run build
 
