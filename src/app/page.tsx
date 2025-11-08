@@ -48,6 +48,7 @@ export default function Home() {
   const [userSelections, setUserSelections] = useState<number[]>([]);
   const [status, setStatus] = useState<string>("Press Play to start");
   const [playNotes, setPlayNotes] = useState<boolean>(false);
+  const [differentOctaves, setDifferentOctaves] = useState<boolean>(true);
 
   const availableIndices = React.useMemo(() => {
     if (mode === "chromatic") return NOTES.map((_, i) => i);
@@ -58,10 +59,12 @@ export default function Home() {
   function generateChord() {
     const count = Math.max(1, Math.min(4, level));
     const indices = sampleIndices(count, availableIndices);
+
     const chord = indices.map((index) => {
       const octave = ([-1, 0, 1] as const)[Math.floor(Math.random() * 3)];
       return { index, octave } as const;
     });
+
     setCurrentChord(chord);
     setUserSelections([]);
     setStatus(`Chord generated: ${count} note${count > 1 ? "s" : ""}. Press Play.`);
@@ -87,11 +90,21 @@ export default function Home() {
       currentChord.forEach(({ index, octave }) => {
         const oscillatorNode = audioContext.createOscillator();
         oscillatorNode.type = "sine";
-        oscillatorNode.frequency.value = NOTES[index].freq * Math.pow(2, octave);
+        oscillatorNode.frequency.value = NOTES[index].freq * Math.pow(2, differentOctaves ? octave : 0);
         oscillatorNode.connect(gainNode);
         oscillatorNode.start(now);
         oscillatorNode.stop(now + duration);
         oscillators.push(oscillatorNode);
+
+        oscillatorNode.onended = () => {
+          // remove from oscilators
+          const idx = oscillators.indexOf(oscillatorNode);
+          if (idx >= 0) oscillators.splice(idx, 1);
+          // close audio context when all done
+          if (oscillators.length === 0) {
+            audioContext.close();
+          }
+        };
       });
     } catch (e) {
       console.warn("Audio error", e);
@@ -108,13 +121,17 @@ export default function Home() {
     const gainNode = audioContext.createGain();
     gainNode.gain.value = 0.2;
     gainNode.connect(audioContext.destination);
-    
+
     const oscillatorNode = audioContext.createOscillator();
     oscillatorNode.type = "sine";
     oscillatorNode.frequency.value = NOTES[noteIndex].freq;
     oscillatorNode.connect(gainNode);
     oscillatorNode.start();
     oscillatorNode.stop(audioContext.currentTime + 0.5);
+
+    oscillatorNode.onended = () => {
+      audioContext.close();
+    };
   }
 
   function toggleSelect(selectionIndex: number) {
@@ -178,9 +195,8 @@ export default function Home() {
   }, [mode, level]);
 
   return (
-    <main style={{ padding: 24, fontFamily: "Inter, system-ui, sans-serif" }}>
+    <main className="p-6">
       <div className="mb-8">
-
         <div className="flex items-center mb-2 gap-3">
           <Image
             src="/logo.png"
@@ -202,7 +218,7 @@ export default function Home() {
         <div className="flex gap-4">
           <Select
             label="Mode"
-            fullWidth={false}
+            className="min-w-40 w-1/2"
             selectedKeys={[mode]}
             selectionMode="single"
             onSelectionChange={(keys) => setMode(Array.from(keys)[0] as Mode)}
@@ -214,7 +230,7 @@ export default function Home() {
 
           <Select
             label="Level"
-            fullWidth={false}
+            className="min-w-40 w-1/2"
             selectedKeys={[String(level)]}
             selectionMode="single"
             onSelectionChange={(keys) => setLevel(Number(Array.from(keys)[0]))}
@@ -224,14 +240,20 @@ export default function Home() {
             <SelectItem key={"3"}>3</SelectItem>
             <SelectItem key={"4"}>4</SelectItem>
           </Select>
-
-          <Switch
-            isSelected={playNotes}
-            onValueChange={setPlayNotes}
-          >
-            Play Notes
-          </Switch>
         </div>
+
+        <Switch
+          isSelected={playNotes}
+          onValueChange={setPlayNotes}
+        >
+          Play Notes
+        </Switch>
+        <Switch
+          isSelected={differentOctaves}
+          onValueChange={setDifferentOctaves}
+        >
+          Different Octaves
+        </Switch>
 
         <div className="flex items-center gap-2">
           <Button
