@@ -4,7 +4,7 @@ ARG IMAGE_NAME=oven/bun:1
 FROM ${IMAGE_NAME} AS builder
 WORKDIR /app
 
-COPY bun.lockb package*.json ./
+COPY bun.lock package*.json ./
 RUN bun install
 
 COPY . .
