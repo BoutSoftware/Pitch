@@ -230,119 +230,18 @@ export default function WebAuthnExp() {
     try {
       console.log('Encrypting data using WebAuthn PRF...');
 
-      // Create a salt for PRF
-      // Explanation: A random value is generated for this single dataToEncrypt
       const prfInput = new Uint8Array(32);
       window.crypto.getRandomValues(prfInput);
 
-      const base64ToUint8Array = (b64: string) => Uint8Array.from(atob(b64), c => c.charCodeAt(0))
+      const prfKey = await getPrfKey(prfInput, user.credentials);
 
-      // Prepare allowCredentials with only PRF-supported credentials
-      const userCredentials: PublicKeyCredentialDescriptor[] = (user.credentials || [])
-        .filter(cred => cred.prfSupported && cred.rawIdBase64) // only use credentials that support PRF
-        .map(cred => {
-          return { type: 'public-key', id: base64ToUint8Array(cred.rawIdBase64!) as Uint8Array } as PublicKeyCredentialDescriptor
-        })
+      const encoded = await encrypt(dataToEncrypt, prfInput, btoa(String.fromCharCode(...prfKey)));
 
-      if (userCredentials.length === 0) {
-        console.error('No credentials supporting PRF extension are available.');
-        return;
-      }
-
-      // Generate a random challenge
-      const challenge = new Uint8Array(32);
-      window.crypto.getRandomValues(challenge);
-
-      // Get assertion with PRF extension
-      const assertion = await navigator.credentials.get({
-        publicKey: {
-          challenge: challenge,
-          allowCredentials: userCredentials,
-          userVerification: 'required',
-          timeout: 60000,
-          extensions: {
-            prf: {
-              eval: {
-                first: prfInput,
-              },
-            },
-          },
-        },
-      }) as PublicKeyCredential | null;
-
-      if (!assertion) {
-        console.error('Assertion failed.');
-        return;
-      }
-
-      // Get PRF output from assertion
-      const clientExtensionResults = (assertion as PublicKeyCredential & { getClientExtensionResults?: () => PRFResults }).getClientExtensionResults?.()
-      console.log('Client extension results:', clientExtensionResults)
-
-      const prfResult = clientExtensionResults?.prf?.results?.first as ArrayBuffer | undefined
-      if (!prfResult) {
-        console.error('PRF extension not supported or failed. Client extension results:', clientExtensionResults);
-        return;
-      }
-
-      // Convert the PRF result (ArrayBuffer) to Uint8Array
-      const prfByteArray = new Uint8Array(prfResult)
-      console.log('PRF output obtained, deriving encryption key...');
-
-      // Import PRF output as key material, getting a CryptoKey from raw bytes (prepared for HKDF)
-      const prfCryptoKey = await window.crypto.subtle.importKey(
-        'raw', // This means we are importing raw binary data as key material
-        prfByteArray, // The PRF output from WebAuthn assertion
-        { name: 'HKDF' }, // We specify that we will use HKDF for key derivation
-        false, // The key material is not extractable
-        ['deriveKey'] // We will use this key material to derive other keys (specifically an AES-GCM key)
-      );
-
-      // Derive a key for AES-GCM encryption using HKDF from the PRF output as CryptoKey (key material)
-      const derivedKey = await window.crypto.subtle.deriveKey(
-        {
-          name: 'HKDF', // We are using HKDF for key derivation
-          salt: new Uint8Array(32), // A zeroed salt for simplicity; in production, use a proper random salt
-          info: new TextEncoder().encode('pitch-webauthn-encryption'), // Contextual info for key derivation. This is necessary to ensure different keys for different purposes
-          hash: 'SHA-256', // The hash function to use with HKDF
-        },
-        prfCryptoKey, // The key material obtained from PRF output
-        { name: 'AES-GCM', length: 256 }, // We want to derive an key for AES-GCM with 256-bit length
-        false, // The derived key is not extractable (cannot be exported, meaning it stays secure within the CryptoKey object)
-        ['encrypt'] // We will use this derived key for encryption only
-      );
-
-      // Generate IV for AES-GCM
-      const iv = new Uint8Array(12);
-      window.crypto.getRandomValues(iv);
-
-      // Encrypt the data using the AES-GCM algorithm with the derived key
-      const encodedData = new TextEncoder().encode(dataToEncrypt);
-      const encryptedData = await window.crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv: iv }, // Set the algorithm and IV
-        derivedKey, // The "Password" to encrypt the data
-        encodedData // The actual data to encrypt
-      );
-
-      // Combine prfSalt, iv, and encryptedData into a single Uint8Array
-      const combined = new Uint8Array(prfInput.length + iv.length + encryptedData.byteLength);
-      combined.set(prfInput, 0);
-      combined.set(iv, prfInput.length);
-      combined.set(new Uint8Array(encryptedData), prfInput.length + iv.length);
-
-      // Encode combined data to base64 for storage)
-      const encryptedString = btoa(String.fromCharCode(...combined));
-      console.log('Data encrypted successfully');
-
-      // Store encrypted data in user.data
-      const updatedUser: User = {
-        ...user,
-        data: [...user.data, encryptedString],
-      };
-
+      const updatedUser: User = { ...user, data: [...user.data, encoded] };
       setUser(updatedUser);
       saveUserToStorage();
       setDataToEncrypt('');
+      console.log('Data encrypted and saved (v2).');
     } catch (error) {
       console.error('Error encrypting data:', error);
     }
@@ -359,92 +258,24 @@ export default function WebAuthnExp() {
     try {
       console.log('Decrypting data using WebAuthn PRF...');
 
-      // Decode the encrypted string
-      const combined = Uint8Array.from(atob(encryptedString), c => c.charCodeAt(0));
+      const parts = encryptedString.split(':');
+      const prfInputB64 = parts[0];
+      const prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
 
-      // Extract prfInput, iv, and encrypted data (with hardcoded lengths (bad))
-      const prfInput = combined.slice(0, 32);
-      const iv = combined.slice(32, 44);
-      const encryptedData = combined.slice(44);
+      const prfKey = await getPrfKey(prfInput, user.credentials);
 
-      const base64ToUint8Array = (b64?: string) => b64 ? Uint8Array.from(atob(b64), c => c.charCodeAt(0)) : undefined
-      const userCredentials: PublicKeyCredentialDescriptor[] = (user.credentials || [])
-        .filter(cred => cred.prfSupported && cred.rawIdBase64) // only use credentials that support PRF
-        .map(cred => {
-          return { type: 'public-key', id: base64ToUint8Array(cred.rawIdBase64!) as Uint8Array } as PublicKeyCredentialDescriptor
-        })
+      const decryptedText = await decrypt(encryptedString, btoa(String.fromCharCode(...prfKey)));
 
-      const challenge = new Uint8Array(32);
-      window.crypto.getRandomValues(challenge);
-
-      // Get assertion with PRF extension using the same salt
-      console.log('userCredentials for PRF get() (decrypt):', userCredentials)
-      const assertion = await navigator.credentials.get({
-        publicKey: {
-          challenge: challenge,
-          allowCredentials: userCredentials,
-          userVerification: 'required',
-          timeout: 60000,
-          extensions: {
-            prf: {
-              eval: {
-                first: prfInput,
-              },
-            },
-          },
-        },
-      }) as PublicKeyCredential | null;
-
-      if (!assertion) {
-        console.error('Assertion failed.');
-        return;
+      const migratedData = await migrate(encryptedString, btoa(String.fromCharCode(...prfKey)));
+      if (migratedData !== encryptedString) {
+        // Update stored data to migrated version
+        const updatedUser: User = { ...user };
+        updatedUser.data[updatedUser.data.indexOf(encryptedString)] = migratedData;
+        setUser(updatedUser);
+        saveUserToStorage();
+        console.log('Data migrated to latest version during decryption.');
       }
 
-      console.log('Assertion returned (decrypt):', assertion)
-      const prfResults = (assertion as PublicKeyCredential & { getClientExtensionResults?: () => PRFResults }).getClientExtensionResults?.()
-      console.log('Client extension results (decrypt):', prfResults)
-
-      if (!prfResults?.prf?.results?.first) {
-        console.error('PRF extension not supported or failed. Client extension results:', prfResults)
-        return
-      }
-
-      const prfOutput = new Uint8Array(prfResults.prf.results.first as ArrayBuffer)
-      console.log('PRF output obtained, deriving decryption key...');
-
-      // Derive AES-GCM key from PRF output (same process as encryption)
-      const keyMaterial = await window.crypto.subtle.importKey(
-        'raw',
-        prfOutput,
-        { name: 'HKDF' },
-        false,
-        ['deriveKey']
-      );
-
-      const aesKey = await window.crypto.subtle.deriveKey(
-        {
-          name: 'HKDF',
-          salt: new Uint8Array(32),
-          info: new TextEncoder().encode('pitch-webauthn-encryption'),
-          hash: 'SHA-256',
-        },
-        keyMaterial,
-        { name: 'AES-GCM', length: 256 },
-        false,
-        ['decrypt']
-      );
-
-      // Decrypt the data
-      const decryptedBuffer = await window.crypto.subtle.decrypt(
-        { name: 'AES-GCM', iv: iv },
-        aesKey,
-        encryptedData
-      );
-
-      const decryptedText = new TextDecoder().decode(decryptedBuffer);
-      console.log('Data decrypted successfully:', decryptedText);
-
-      // Update decrypted data state
       const newDecryptedData = [...decryptedData];
       newDecryptedData[index] = decryptedText;
       setDecryptedData(newDecryptedData);
@@ -488,11 +319,11 @@ export default function WebAuthnExp() {
   }, [user]);
 
   return (
-    <main className="p-6">
+    <main className="p-6 flex flex-col">
 
       {/* User Info */}
       {user && (
-        <div className="flex flex-col gap-4 items-start">
+        <div className="flex flex-col gap-4 items-start w-full">
           <Button onPress={createWebAuthnCredential}>Create WebAuthn Credential</Button>
           <Button onPress={requestWebAuthnAssertion}>Request WebAuthn Assertion</Button>
 
@@ -530,7 +361,7 @@ export default function WebAuthnExp() {
           )}
 
           <h2 className="text-xl font-bold mb-2">User Info</h2>
-          <pre className="bg-content1 shadow p-4 rounded">{JSON.stringify(user, null, 2)}</pre>
+          <pre className="bg-content1 shadow p-4 rounded w-full max-w-3xl overflow-auto">{JSON.stringify(user, null, 2)}</pre>
           {/* pre is used to display formatted JSON, because it preserves whitespace and formatting */}
         </div>
       )}
@@ -549,4 +380,161 @@ export default function WebAuthnExp() {
       </div>
     </main>
   )
+}
+
+
+async function decryptV1(dataString: string, key: string): Promise<string> {
+  // v1 format: prfInput:iv:encrypted:1
+  const parts = dataString.split(':');
+  const [prfInputB64, ivB64, encryptedB64] = parts;
+
+  const prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
+  const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
+  const encrypted = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
+
+  // import key (turn it into a CryptoKey)
+  const importedKey = await window.crypto.subtle.importKey('raw', Uint8Array.from(atob(key), c => c.charCodeAt(0)), { name: 'HKDF' }, false, ['deriveKey']);
+
+  // defrive key, ready for EAS-GCM decryption
+  const aesKey = await window.crypto.subtle.deriveKey(
+    { name: 'HKDF', salt: new Uint8Array(32), info: new TextEncoder().encode('pitch-webauthn-encryption'), hash: 'SHA-256' },
+    importedKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt'],
+  );
+
+  const decryptedBuffer = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, aesKey, encrypted);
+
+  return new TextDecoder().decode(decryptedBuffer);
+}
+
+async function encryptV2(plaintext: string, prfInput: Uint8Array, key: string): Promise<string> {
+  // v2 format: prfInput:hkdfSalt:iv:encrypted:2
+
+  // Generate random HKDF salt
+  const hkdfSalt = new Uint8Array(16);
+  window.crypto.getRandomValues(hkdfSalt);
+
+  const toB64 = (u: Uint8Array) => btoa(String.fromCharCode(...u));
+
+  // import key (turn it into a CryptoKey)
+  const importedKey = await window.crypto.subtle.importKey('raw', Uint8Array.from(atob(key), c => c.charCodeAt(0)), { name: 'HKDF' }, false, ['deriveKey']);
+
+  // derive key, ready for EAS-GCM encryption
+  const aesKey = await window.crypto.subtle.deriveKey(
+    { name: 'HKDF', salt: hkdfSalt, info: new TextEncoder().encode('pitch-webauthn-encryption'), hash: 'SHA-256' },
+    importedKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt'],
+  );
+
+  // Generate random IV
+  const iv = new Uint8Array(12);
+  window.crypto.getRandomValues(iv);
+
+  const encryptedData = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, new TextEncoder().encode(plaintext));
+
+  const encoded = [toB64(prfInput), toB64(hkdfSalt), toB64(iv), toB64(new Uint8Array(encryptedData)), '2'].join(':');
+
+  return encoded;
+}
+
+async function decryptV2(dataString: string, key: string): Promise<string> {
+  // v2 format: prfInput:hkdfSalt:iv:encrypted:2
+  const parts = dataString.split(':');
+  const [prfInputB64, hkdfSaltB64, ivB64, encryptedB64] = parts;
+
+  const prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
+  const hkdfSalt = Uint8Array.from(atob(hkdfSaltB64), c => c.charCodeAt(0));
+  const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
+  const encrypted = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
+
+  // import key (turn it into a CryptoKey)
+  const importedKey = await window.crypto.subtle.importKey('raw', Uint8Array.from(atob(key), c => c.charCodeAt(0)), { name: 'HKDF' }, false, ['deriveKey']);
+
+  // derive key, ready for EAS-GCM decryption
+  const aesKey = await window.crypto.subtle.deriveKey(
+    { name: 'HKDF', salt: hkdfSalt, info: new TextEncoder().encode('pitch-webauthn-encryption'), hash: 'SHA-256' },
+    importedKey,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt'],
+  );
+
+  const decryptedBuffer = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, aesKey, encrypted);
+
+  return new TextDecoder().decode(decryptedBuffer);
+}
+
+async function encrypt(plaintext: string, prfInput: Uint8Array, key: string): Promise<string> {
+  // Use v2 encryption format
+  return encryptV2(plaintext, prfInput, key);
+}
+
+async function decrypt(dataString: string, key: string): Promise<string> {
+  const parts = dataString.split(':');
+
+  const version = parseInt(parts[parts.length - 1], 10);
+
+  if (version === 1) {
+    return decryptV1(dataString, key);
+  } else if (version === 2) {
+    return decryptV2(dataString, key);
+  } else {
+    throw new Error('Unsupported data version: ' + version);
+  }
+}
+
+async function migrate(dataString: string, key: string): Promise<string> {
+  const parts = dataString.split(':');
+
+  const version = parseInt(parts[parts.length - 1], 10);
+
+  if (version === 2) {
+    // already latest version
+    return dataString;
+  }
+
+  const prfInputB64 = parts[0];
+  const prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
+
+  const decrypted = await decrypt(dataString, key);
+  return encrypt(decrypted, prfInput, key);
+}
+
+async function getPrfKey(prfInput: BufferSource, credentials: StoredCredential[]) {
+  const filteredCreds = credentials
+    .filter(cred => cred.prfSupported && cred.rawIdBase64)
+    .map(cred => ({
+      type: 'public-key',
+      id: Uint8Array.from(atob(cred.rawIdBase64!), c => c.charCodeAt(0))
+    } as PublicKeyCredentialDescriptor));
+
+  const challenge = new Uint8Array(32);
+  window.crypto.getRandomValues(challenge);
+
+  const assertion = await navigator.credentials.get({
+    publicKey: {
+      challenge,
+      allowCredentials: filteredCreds,
+      userVerification: 'required',
+      timeout: 60000,
+      extensions: { prf: { eval: { first: prfInput } } },
+    },
+  }) as PublicKeyCredential | null;
+
+  if (!assertion) {
+    throw new Error('Assertion failed.');
+  }
+
+  const clientExt = (assertion as PublicKeyCredential & { getClientExtensionResults?: () => PRFResults }).getClientExtensionResults?.();
+  const prfResult = clientExt?.prf?.results?.first as ArrayBuffer | undefined;
+
+  if (!prfResult) {
+    throw new Error('PRF extension not supported or failed.');
+  }
+
+  return new Uint8Array(prfResult);
 }
