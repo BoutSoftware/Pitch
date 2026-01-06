@@ -1,25 +1,9 @@
 "use client"
 
+import { decrypt, encrypt, getPrfResult, StoredCredential, updateDataVersion } from '@/services/encryption'
 import { Button } from '@heroui/button'
 import { Spinner } from '@heroui/spinner'
 import React, { useEffect } from 'react'
-
-type StoredCredential = {
-  id: string
-  type: string
-  rawIdBase64?: string
-  prfSupported?: boolean
-}
-
-interface PRFResults {
-  prf?: {
-    results?: {
-      first?: ArrayBuffer
-      second?: ArrayBuffer
-    }
-  }
-  [key: string]: unknown
-}
 
 interface User {
   id: string
@@ -67,10 +51,10 @@ export default function WebAuthnExp() {
         { alg: -257, type: 'public-key' }, // RS256
       ],
       authenticatorSelection: {
-        // Do not force `authenticatorAttachment` so the browser can select the best authenticator.
-        userVerification: 'preferred', // prefer but don't mandate (improves compatibility)
-        residentKey: 'discouraged', // avoid requiring discoverable/resident credentials
-        requireResidentKey: false,
+        residentKey: 'preferred', // Prefer resident keys for better security
+        userVerification: 'preferred', // Prefer user verification (biometrics, PIN, etc.)
+        authenticatorAttachment: 'platform', // Prefer platform authenticators (built-in) over cross-platform (external) ones
+        requireResidentKey: false, //
       },
       timeout: 60000,
       attestation: 'none', // avoid attestation prompts which some platform authenticators block
@@ -160,22 +144,38 @@ export default function WebAuthnExp() {
         }
       })
       .filter(Boolean) as PublicKeyCredentialDescriptor[]
-    const challenge = new Uint8Array(32)
-    window.crypto.getRandomValues(challenge)
 
-    console.log('Requesting WebAuthn assertion with challenge:', challenge)
 
-    navigator.credentials.get({
-      publicKey: {
-        challenge: challenge,
-        allowCredentials: userCredentials,
-        userVerification: 'preferred',
-        timeout: 60000,
-      },
-    }).then((assertion) => {
+    try {
+      // create a backdrop blur on top of the screen while its authenticating
+      const backdrop = document.createElement('div')
+      backdrop.style.position = 'fixed'
+      backdrop.style.top = '0'
+      backdrop.style.left = '0'
+      backdrop.style.width = '100%'
+      backdrop.style.height = '100%'
+      backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
+      backdrop.style.backdropFilter = 'blur(5px)'
+      backdrop.style.zIndex = '9999'
+      document.body.appendChild(backdrop)
+
+      const challenge = new Uint8Array(32)
+      window.crypto.getRandomValues(challenge)
+      const assertion = await navigator.credentials.get({
+        publicKey: {
+          challenge: challenge,
+          allowCredentials: userCredentials,
+          userVerification: 'preferred',
+          timeout: 60000,
+        },
+      }) as PublicKeyCredential | null
+
       console.log('Assertion obtained:', assertion)
       // Here you would send the assertion to your server for verification
-    }).catch((error) => {
+
+      // Remove the backdrop blur after authentication is complete
+      document.body.removeChild(backdrop)
+    } catch (error) {
       console.warn('Error obtaining assertion:', error)
 
       if (error instanceof DOMException && error.name === 'NotAllowedError') {
@@ -189,7 +189,7 @@ export default function WebAuthnExp() {
       } else if (error instanceof DOMException && error.name === 'UnknownError') {
         console.log('An unknown error occurred during the WebAuthn operation.')
       }
-    })
+    }
   }
 
   // Ask for assertion on tab focus
@@ -233,9 +233,9 @@ export default function WebAuthnExp() {
       const prfInput = new Uint8Array(32);
       window.crypto.getRandomValues(prfInput);
 
-      const prfKey = await getPrfKey(prfInput, user.credentials);
+      const prfResult = await getPrfResult(prfInput, user.credentials);
 
-      const encoded = await encrypt(dataToEncrypt, prfInput, btoa(String.fromCharCode(...prfKey)));
+      const encoded = await encrypt(dataToEncrypt, prfInput, btoa(String.fromCharCode(...prfResult.prfKey)), btoa(String.fromCharCode(...new Uint8Array(prfResult.assertion.rawId))));
 
       const updatedUser: User = { ...user, data: [...user.data, encoded] };
       setUser(updatedUser);
@@ -260,13 +260,14 @@ export default function WebAuthnExp() {
 
       const parts = encryptedString.split(':');
       const prfInputB64 = parts[0];
+      const credRawIdB64 = parts[1];
       const prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
 
-      const prfKey = await getPrfKey(prfInput, user.credentials);
+      const { prfKey, assertion } = await getPrfResult(prfInput, user.credentials, credRawIdB64);
 
       const decryptedText = await decrypt(encryptedString, btoa(String.fromCharCode(...prfKey)));
 
-      const migratedData = await migrate(encryptedString, btoa(String.fromCharCode(...prfKey)));
+      const migratedData = await updateDataVersion(encryptedString, btoa(String.fromCharCode(...prfKey)), btoa(String.fromCharCode(...new Uint8Array(assertion.rawId))));
       if (migratedData !== encryptedString) {
         // Update stored data to migrated version
         const updatedUser: User = { ...user };
@@ -380,161 +381,4 @@ export default function WebAuthnExp() {
       </div>
     </main>
   )
-}
-
-
-async function decryptV1(dataString: string, key: string): Promise<string> {
-  // v1 format: prfInput:iv:encrypted:1
-  const parts = dataString.split(':');
-  const [prfInputB64, ivB64, encryptedB64] = parts;
-
-  const prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
-  const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
-  const encrypted = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
-
-  // import key (turn it into a CryptoKey)
-  const importedKey = await window.crypto.subtle.importKey('raw', Uint8Array.from(atob(key), c => c.charCodeAt(0)), { name: 'HKDF' }, false, ['deriveKey']);
-
-  // defrive key, ready for EAS-GCM decryption
-  const aesKey = await window.crypto.subtle.deriveKey(
-    { name: 'HKDF', salt: new Uint8Array(32), info: new TextEncoder().encode('pitch-webauthn-encryption'), hash: 'SHA-256' },
-    importedKey,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['decrypt'],
-  );
-
-  const decryptedBuffer = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, aesKey, encrypted);
-
-  return new TextDecoder().decode(decryptedBuffer);
-}
-
-async function encryptV2(plaintext: string, prfInput: Uint8Array, key: string): Promise<string> {
-  // v2 format: prfInput:hkdfSalt:iv:encrypted:2
-
-  // Generate random HKDF salt
-  const hkdfSalt = new Uint8Array(16);
-  window.crypto.getRandomValues(hkdfSalt);
-
-  const toB64 = (u: Uint8Array) => btoa(String.fromCharCode(...u));
-
-  // import key (turn it into a CryptoKey)
-  const importedKey = await window.crypto.subtle.importKey('raw', Uint8Array.from(atob(key), c => c.charCodeAt(0)), { name: 'HKDF' }, false, ['deriveKey']);
-
-  // derive key, ready for EAS-GCM encryption
-  const aesKey = await window.crypto.subtle.deriveKey(
-    { name: 'HKDF', salt: hkdfSalt, info: new TextEncoder().encode('pitch-webauthn-encryption'), hash: 'SHA-256' },
-    importedKey,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['encrypt'],
-  );
-
-  // Generate random IV
-  const iv = new Uint8Array(12);
-  window.crypto.getRandomValues(iv);
-
-  const encryptedData = await window.crypto.subtle.encrypt({ name: 'AES-GCM', iv }, aesKey, new TextEncoder().encode(plaintext));
-
-  const encoded = [toB64(prfInput), toB64(hkdfSalt), toB64(iv), toB64(new Uint8Array(encryptedData)), '2'].join(':');
-
-  return encoded;
-}
-
-async function decryptV2(dataString: string, key: string): Promise<string> {
-  // v2 format: prfInput:hkdfSalt:iv:encrypted:2
-  const parts = dataString.split(':');
-  const [prfInputB64, hkdfSaltB64, ivB64, encryptedB64] = parts;
-
-  const prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
-  const hkdfSalt = Uint8Array.from(atob(hkdfSaltB64), c => c.charCodeAt(0));
-  const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
-  const encrypted = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
-
-  // import key (turn it into a CryptoKey)
-  const importedKey = await window.crypto.subtle.importKey('raw', Uint8Array.from(atob(key), c => c.charCodeAt(0)), { name: 'HKDF' }, false, ['deriveKey']);
-
-  // derive key, ready for EAS-GCM decryption
-  const aesKey = await window.crypto.subtle.deriveKey(
-    { name: 'HKDF', salt: hkdfSalt, info: new TextEncoder().encode('pitch-webauthn-encryption'), hash: 'SHA-256' },
-    importedKey,
-    { name: 'AES-GCM', length: 256 },
-    false,
-    ['decrypt'],
-  );
-
-  const decryptedBuffer = await window.crypto.subtle.decrypt({ name: 'AES-GCM', iv: iv }, aesKey, encrypted);
-
-  return new TextDecoder().decode(decryptedBuffer);
-}
-
-async function encrypt(plaintext: string, prfInput: Uint8Array, key: string): Promise<string> {
-  // Use v2 encryption format
-  return encryptV2(plaintext, prfInput, key);
-}
-
-async function decrypt(dataString: string, key: string): Promise<string> {
-  const parts = dataString.split(':');
-
-  const version = parseInt(parts[parts.length - 1], 10);
-
-  if (version === 1) {
-    return decryptV1(dataString, key);
-  } else if (version === 2) {
-    return decryptV2(dataString, key);
-  } else {
-    throw new Error('Unsupported data version: ' + version);
-  }
-}
-
-async function migrate(dataString: string, key: string): Promise<string> {
-  const parts = dataString.split(':');
-
-  const version = parseInt(parts[parts.length - 1], 10);
-
-  if (version === 2) {
-    // already latest version
-    return dataString;
-  }
-
-  const prfInputB64 = parts[0];
-  const prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
-
-  const decrypted = await decrypt(dataString, key);
-  return encrypt(decrypted, prfInput, key);
-}
-
-async function getPrfKey(prfInput: BufferSource, credentials: StoredCredential[]) {
-  const filteredCreds = credentials
-    .filter(cred => cred.prfSupported && cred.rawIdBase64)
-    .map(cred => ({
-      type: 'public-key',
-      id: Uint8Array.from(atob(cred.rawIdBase64!), c => c.charCodeAt(0))
-    } as PublicKeyCredentialDescriptor));
-
-  const challenge = new Uint8Array(32);
-  window.crypto.getRandomValues(challenge);
-
-  const assertion = await navigator.credentials.get({
-    publicKey: {
-      challenge,
-      allowCredentials: filteredCreds,
-      userVerification: 'required',
-      timeout: 60000,
-      extensions: { prf: { eval: { first: prfInput } } },
-    },
-  }) as PublicKeyCredential | null;
-
-  if (!assertion) {
-    throw new Error('Assertion failed.');
-  }
-
-  const clientExt = (assertion as PublicKeyCredential & { getClientExtensionResults?: () => PRFResults }).getClientExtensionResults?.();
-  const prfResult = clientExt?.prf?.results?.first as ArrayBuffer | undefined;
-
-  if (!prfResult) {
-    throw new Error('PRF extension not supported or failed.');
-  }
-
-  return new Uint8Array(prfResult);
 }
