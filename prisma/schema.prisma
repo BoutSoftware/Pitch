@@ -1,0 +1,131 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// --------------- APP MODELS ---------------
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  // id        String   @id @map("_id")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  email         String  @unique
+  name          String
+  emailVerified Boolean @default(false)
+  image         String?
+
+  Passkeys    Passkey[]
+  DataStrings DataString[]
+  Challenges  Challenge[]
+  sessions    Session[]
+  accounts    Account[]
+
+  @@map("user")
+}
+
+model Passkey {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  keyId      String   @unique
+  publicKey  String
+  signCount  Int
+  transports String[]
+
+  userId String @db.ObjectId
+
+  User        User         @relation(fields: [userId], references: [id])
+  DataStrings DataString[]
+}
+
+model DataString {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  encryptedData String
+
+  userId    String @db.ObjectId
+  passkeyId String @db.ObjectId
+
+  User    User    @relation(fields: [userId], references: [id])
+  Passkey Passkey @relation(fields: [passkeyId], references: [id])
+}
+
+model Challenge {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  challenge String @unique
+
+  userId String @db.ObjectId
+
+  User User @relation(fields: [userId], references: [id])
+}
+
+// ----------- BETTER AUTH MODELS ------------
+
+model Session {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime
+
+  token     String
+  ipAddress String?
+  userAgent String?
+
+  userId String @db.ObjectId
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  accountId             String
+  providerId            String
+
+  userId String @db.ObjectId
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  expiresAt DateTime
+
+  identifier String
+  value      String
+
+  @@index([identifier])
+  @@map("verification")
+}

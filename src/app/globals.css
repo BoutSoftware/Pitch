@@ -7,9 +7,9 @@
 @custom-variant dark (&:is(.dark *));
 
 .material-symbols-outlined {
-    font-size: 20px;
+  font-size: 20px;
 }
 
-/* .icon-md {
-   font-size: 20px;
- } */
+.icon-sm {
+  font-size: 16px;
+}
