@@ -4,6 +4,7 @@ import PasswordInput from '@/components/PasswordInput'
 import { authClient } from '@/config/authClient'
 import { Button } from '@heroui/button'
 import { Input } from '@heroui/input'
+import { Link } from '@heroui/link'
 import React from 'react'
 
 export default function LoginPage() {
@@ -42,6 +43,10 @@ export default function LoginPage() {
         <PasswordInput label="Password" value={form.password} onValueChange={value => setForm({ ...form, password: value })} />
         <Button type="submit" isLoading={form.loading}>Login</Button>
       </form>
+
+      <p className='mt-4'>
+        Don&apos;t have an account? <Link href="/exp/Auth/signup">Sign Up</Link>
+      </p>
     </main>
   )
 }
