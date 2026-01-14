@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { decrypt, encrypt, getPrfResult, StoredCredential, updateDataVersion } from '@/services/encryption'
-import { Button } from '@heroui/button'
-import { Spinner } from '@heroui/spinner'
-import React, { useEffect } from 'react'
+import { decrypt, encrypt, getPrfResult, StoredCredential, updateDataVersion } from '@/services/encryption';
+import { Button } from '@heroui/button';
+import { Spinner } from '@heroui/spinner';
+import React, { useEffect } from 'react';
 
 interface User {
   id: string
@@ -14,29 +14,29 @@ interface User {
 }
 
 export default function WebAuthnExp() {
-  const [user, setUser] = React.useState<User>()
-  const [dataToEncrypt, setDataToEncrypt] = React.useState<string>('')
-  const [decryptedData, setDecryptedData] = React.useState<string[]>([])
+  const [user, setUser] = React.useState<User>();
+  const [dataToEncrypt, setDataToEncrypt] = React.useState<string>('');
+  const [decryptedData, setDecryptedData] = React.useState<string[]>([]);
 
   const saveUserToStorage = () => {
-    if (!user) return
+    if (!user) return;
 
     setUser((prevUser) => {
-      if (!prevUser) return prevUser
-      localStorage.setItem('webauthn-user', JSON.stringify(prevUser))
-      console.log('User saved to localStorage')
-      return prevUser
-    })
-  }
+      if (!prevUser) return prevUser;
+      localStorage.setItem('webauthn-user', JSON.stringify(prevUser));
+      console.log('User saved to localStorage');
+      return prevUser;
+    });
+  };
 
   const createWebAuthnCredential = async () => {
-    if (!user) return
+    if (!user) return;
 
-    console.log('Creating WebAuthn Credential...')
+    console.log('Creating WebAuthn Credential...');
 
     // Simulate server-provided webauthn information and challenge
-    const challenge = new Uint8Array(32)
-    window.crypto.getRandomValues(challenge)
+    const challenge = new Uint8Array(32);
+    window.crypto.getRandomValues(challenge);
     const publicKey: PublicKeyCredentialCreationOptions = {
       challenge: challenge,
       rp: { name: 'Pitch' },
@@ -65,102 +65,102 @@ export default function WebAuthnExp() {
           },
         },
       },
-    }
+    };
 
     try {
       const credential = await navigator.credentials.create({
         publicKey,
-      }) as PublicKeyCredential | null
+      }) as PublicKeyCredential | null;
 
       if (!credential) {
-        console.error('Credential creation was not successful.')
-        return
+        console.error('Credential creation was not successful.');
+        return;
       }
 
-      console.log('Credential created:', credential)
+      console.log('Credential created:', credential);
 
-      const prfSupported = credential.getClientExtensionResults().prf?.enabled
+      const prfSupported = credential.getClientExtensionResults().prf?.enabled;
 
       if (prfSupported) {
-        console.log('PRF extension is supported by the authenticator.')
+        console.log('PRF extension is supported by the authenticator.');
       } else {
-        console.warn('PRF extension is NOT supported by the authenticator.')
+        console.warn('PRF extension is NOT supported by the authenticator.');
       }
 
       // Store rawId as base64 so we can reconstruct the original ArrayBuffer later
-      const rawIdArray = new Uint8Array(credential.rawId as ArrayBuffer)
-      const rawIdBase64 = btoa(String.fromCharCode(...rawIdArray))
+      const rawIdArray = new Uint8Array(credential.rawId as ArrayBuffer);
+      const rawIdBase64 = btoa(String.fromCharCode(...rawIdArray));
 
       const newCredential: StoredCredential = {
         id: credential.id,
         type: credential.type,
         rawIdBase64,
         prfSupported: !!prfSupported,
-      }
+      };
 
       const updatedUser: User = {
         ...user,
         credentials: [...(user.credentials || []), newCredential],
-      }
+      };
 
-      setUser(updatedUser)
-      saveUserToStorage()
-      localStorage.setItem('webauthn-required', 'true')
-      console.log('User credentials updated successfully')
+      setUser(updatedUser);
+      saveUserToStorage();
+      localStorage.setItem('webauthn-required', 'true');
+      console.log('User credentials updated successfully');
 
     } catch (error) {
-      console.error('Error creating credential:', error)
+      console.error('Error creating credential:', error);
     }
-  }
+  };
 
   const requestWebAuthnAssertion = async () => {
-    console.log('Requesting WebAuthn Assertion...')
-    if (!user) return
+    console.log('Requesting WebAuthn Assertion...');
+    if (!user) return;
 
     if (!user || !user.credentials || user.credentials.length === 0) {
-      console.warn('No credentials available for assertion.')
-      return
+      console.warn('No credentials available for assertion.');
+      return;
     }
 
     if (!window.PublicKeyCredential) {
-      console.error('WebAuthn is not supported on this browser.')
-      return
+      console.error('WebAuthn is not supported on this browser.');
+      return;
     }
 
-    const webAuthnRequired = localStorage.getItem('webauthn-required') === 'true'
+    const webAuthnRequired = localStorage.getItem('webauthn-required') === 'true';
     if (!webAuthnRequired) {
-      console.log('WebAuthn not required by server. Skipping assertion.')
-      return
+      console.log('WebAuthn not required by server. Skipping assertion.');
+      return;
     }
 
-    const base64ToUint8Array = (b64?: string) => b64 ? Uint8Array.from(atob(b64), c => c.charCodeAt(0)) : undefined
+    const base64ToUint8Array = (b64?: string) => b64 ? Uint8Array.from(atob(b64), c => c.charCodeAt(0)) : undefined;
 
     const userCredentials: PublicKeyCredentialDescriptor[] = (user.credentials || [])
       .map(cred => {
-        if (!cred.rawIdBase64) return null
+        if (!cred.rawIdBase64) return null;
         return {
           type: 'public-key',
           id: base64ToUint8Array(cred.rawIdBase64) as Uint8Array,
-        }
+        };
       })
-      .filter(Boolean) as PublicKeyCredentialDescriptor[]
+      .filter(Boolean) as PublicKeyCredentialDescriptor[];
 
 
     try {
       // create a backdrop blur on top of the screen while its authenticating
-      const backdrop = document.createElement('div')
-      backdrop.style.position = 'fixed'
-      backdrop.style.top = '0'
-      backdrop.style.left = '0'
-      backdrop.style.width = '100%'
-      backdrop.style.height = '100%'
-      backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-      backdrop.style.backdropFilter = 'blur(5px)'
-      backdrop.style.zIndex = '9999'
-      document.body.appendChild(backdrop)
+      const backdrop = document.createElement('div');
+      backdrop.style.position = 'fixed';
+      backdrop.style.top = '0';
+      backdrop.style.left = '0';
+      backdrop.style.width = '100%';
+      backdrop.style.height = '100%';
+      backdrop.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+      backdrop.style.backdropFilter = 'blur(5px)';
+      backdrop.style.zIndex = '9999';
+      document.body.appendChild(backdrop);
 
-      const challenge = new Uint8Array(32)
-      window.crypto.getRandomValues(challenge)
+      const challenge = new Uint8Array(32);
+      window.crypto.getRandomValues(challenge);
       const assertion = await navigator.credentials.get({
         publicKey: {
           challenge: challenge,
@@ -168,33 +168,33 @@ export default function WebAuthnExp() {
           userVerification: 'preferred',
           timeout: 60000,
         },
-      }) as PublicKeyCredential | null
+      }) as PublicKeyCredential | null;
 
-      console.log('Assertion obtained:', assertion)
+      console.log('Assertion obtained:', assertion);
       // Here you would send the assertion to your server for verification
 
       // Remove the backdrop blur after authentication is complete
-      document.body.removeChild(backdrop)
+      document.body.removeChild(backdrop);
     } catch (error) {
-      console.warn('Error obtaining assertion:', error)
+      console.warn('Error obtaining assertion:', error);
 
       if (error instanceof DOMException && error.name === 'NotAllowedError') {
-        console.log('User cancelled the WebAuthn prompt or it timed out.')
+        console.log('User cancelled the WebAuthn prompt or it timed out.');
       } else if (error instanceof DOMException && error.name === 'InvalidStateError') {
-        console.log('No valid credentials available for assertion.')
+        console.log('No valid credentials available for assertion.');
       } else if (error instanceof DOMException && error.name === 'NotSupportedError') {
-        console.log('The authenticator does not support the requested operation.')
+        console.log('The authenticator does not support the requested operation.');
       } else if (error instanceof DOMException && error.name === 'SecurityError') {
-        console.log('The operation was insecure (e.g., not on HTTPS).')
+        console.log('The operation was insecure (e.g., not on HTTPS).');
       } else if (error instanceof DOMException && error.name === 'UnknownError') {
-        console.log('An unknown error occurred during the WebAuthn operation.')
+        console.log('An unknown error occurred during the WebAuthn operation.');
       }
     }
-  }
+  };
 
   // Ask for assertion on tab focus
   const handleTabFocus = async () => {
-    console.log('Tab focused, requesting WebAuthn assertion...')
+    console.log('Tab focused, requesting WebAuthn assertion...');
 
     // Check if a WebAuthn assertion is already in progress using localStorage
     const webauthnInProgressTimestamp = localStorage.getItem('webauthn-next-assertion');
@@ -286,26 +286,26 @@ export default function WebAuthnExp() {
   };
 
   const setupUser = (newUser?: User) => {
-    const storedUser = localStorage.getItem('webauthn-user')
+    const storedUser = localStorage.getItem('webauthn-user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser) as User)
+      setUser(JSON.parse(storedUser) as User);
     } else if (newUser) {
-      setUser(newUser)
+      setUser(newUser);
     } else {
       const createdUser: User = {
         id: crypto.randomUUID(),
         name: 'user_' + Math.floor(Math.random() * 10000),
         displayName: 'User ' + Math.floor(Math.random() * 10000),
         data: [],
-      }
-      setUser(createdUser)
-      localStorage.setItem('webauthn-user', JSON.stringify(createdUser))
+      };
+      setUser(createdUser);
+      localStorage.setItem('webauthn-user', JSON.stringify(createdUser));
     }
-  }
+  };
 
   useEffect(() => {
     setupUser();
-  }, [])
+  }, []);
 
   useEffect(() => {
     if (!window) return;
@@ -380,5 +380,5 @@ export default function WebAuthnExp() {
         </Button>
       </div>
     </main>
-  )
+  );
 }

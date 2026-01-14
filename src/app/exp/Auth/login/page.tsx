@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import PasswordInput from '@/components/PasswordInput'
-import { authClient } from '@/config/authClient'
-import { Button } from '@heroui/button'
-import { Input } from '@heroui/input'
-import { Link } from '@heroui/link'
-import React from 'react'
+import PasswordInput from '@/components/PasswordInput';
+import { authClient } from '@/config/authClient';
+import { Button } from '@heroui/button';
+import { Input } from '@heroui/input';
+import { Link } from '@heroui/link';
+import React from 'react';
 
 export default function LoginPage() {
   const [form, setForm] = React.useState({
     email: '',
     password: '',
     loading: false
-  })
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,15 +25,15 @@ export default function LoginPage() {
       callbackURL: "/exp/Auth/dashboard"
     }, {
       redirect: 'follow'
-    })
+    });
     setForm({ ...form, loading: false });
 
     if (error) {
-      console.error("Login Error:", error)
+      console.error("Login Error:", error);
     } else {
-      console.log("Login Success:", data)
+      console.log("Login Success:", data);
     }
-  }
+  };
 
   return (
     <main className='p-8'>
@@ -48,5 +48,5 @@ export default function LoginPage() {
         Don&apos;t have an account? <Link href="/exp/Auth/signup">Sign Up</Link>
       </p>
     </main>
-  )
+  );
 }

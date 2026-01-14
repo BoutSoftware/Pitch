@@ -17,3 +17,4 @@ export const auth = betterAuth({
     }
 });
 
+export type SessionData = Exclude<Awaited<ReturnType<typeof auth.api.getSession>>, null | undefined>;

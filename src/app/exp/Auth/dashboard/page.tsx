@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import { signOut, useSession } from '@/config/authClient'
-import { Button } from '@heroui/button'
-import { Link } from '@heroui/link'
-import { Spinner } from '@heroui/spinner'
-import { useRouter } from 'next/navigation'
-import React, { useEffect } from 'react'
+import { signOut, useSession } from '@/config/authClient';
+import { Button } from '@heroui/button';
+import { Link } from '@heroui/link';
+import { Spinner } from '@heroui/spinner';
+import { useRouter } from 'next/navigation';
+import React, { useEffect } from 'react';
 
 export default function DashboardPage() {
-  const { data: session, isPending } = useSession()
-  const router = useRouter()
+  const { data: session, isPending } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
     if (!isPending && !session) {
       // Redirect to login page or show a message
-      console.log('No active session, redirecting to login...')
-      router.push('/exp/Auth/login')
+      console.log('No active session, redirecting to login...');
+      router.push('/exp/Auth/login');
     }
-  }, [session, isPending])
+  }, [session, isPending]);
 
   return (
     <main className='p-4'>
@@ -29,8 +29,11 @@ export default function DashboardPage() {
           <Button onPress={() => signOut()}>
             Logout
           </Button>
-          <Link href="/exp/Auth/otherPage">
+          <Link href="/exp/Auth/otherPage" className='block'>
             Go to Other Page
+          </Link>
+          <Link href="/exp/Auth/passkeys" className='block'>
+            Manage Passkeys
           </Link>
         </>
         :
@@ -46,5 +49,5 @@ export default function DashboardPage() {
         )
       }
     </main>
-  )
+  );
 }

@@ -20,6 +20,7 @@
     "@heroui/system": "2.4.25",
     "@heroui/theme": "2.4.25",
     "@prisma/client": "6.19",
+    "@simplewebauthn/server": "^13.2.2",
     "better-auth": "^1.4.10",
     "dotenv": "^17.2.3",
     "framer-motion": "^12.23.26",
