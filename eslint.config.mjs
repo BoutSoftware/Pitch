@@ -16,10 +16,11 @@ const eslintConfig = defineConfig([
   // General rules.
   {
     rules: {
-      "no-unused-vars": "warn",
-      "react/react-in-jsx-scope": "off",
-      "react-hooks/set-state-in-effect": "off",
-      "react-hooks/exhaustive-deps": "off"
+      // "no-unused-vars": "warn", // Already handled by TypeScript eslint plugin.
+      "react/react-in-jsx-scope": "off", // Disable the need to import React in scope.
+      "react-hooks/set-state-in-effect": "off", // Disable warning for setting state in useEffect.
+      "react-hooks/exhaustive-deps": "off", // Disable warning for missing dependencies in useEffect.
+      "semi": "warn" // Warn on missing semicolons.
     }
   }
 ]);

@@ -6,40 +6,13 @@ import { Switch } from "@heroui/switch";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
 
-type Mode = "whites" | "blacks" | "chromatic";
-
-const NOTE_NAMES = [
-  "C",
-  "C#",
-  "D",
-  "D#",
-  "E",
-  "F",
-  "F#",
-  "G",
-  "G#",
-  "A",
-  "A#",
-  "B",
-];
-
-// Generate frequencies for octave 4 (MIDI 60..71) using A4 = MIDI 69 -> 440Hz
-const NOTES = NOTE_NAMES.map((name, i) => {
-  const midi = 60 + i; // C4..B4
-  const freq = 440 * Math.pow(2, (midi - 69) / 12);
-  const isBlack = name.includes("#");
-  return { id: i, name, freq, isBlack };
-});
-
-function sampleIndices(count: number, pool: number[]) {
-  const copy = [...pool];
-  const out: number[] = [];
-  for (let i = 0; i < count && copy.length; i++) {
-    const idx = Math.floor(Math.random() * copy.length);
-    out.push(copy.splice(idx, 1)[0]);
-  }
-  return out;
-}
+import type { Mode } from "@/types/types";
+import { NOTES, getAvailableIndices } from "@/types/types";
+import {
+  playNote,
+  playChordWithOctave,
+} from "@/services/audio";
+import { sampleIndices, arraysEqualAsSets } from "@/utils/notes";
 
 export default function Home() {
   const [level, setLevel] = useState<number>(1); // 1..4
@@ -51,9 +24,7 @@ export default function Home() {
   const [differentOctaves, setDifferentOctaves] = useState<boolean>(true);
 
   const availableIndices = React.useMemo(() => {
-    if (mode === "chromatic") return NOTES.map((_, i) => i);
-    if (mode === "whites") return NOTES.map((n, i) => (!n.isBlack ? i : -1)).filter((i) => i >= 0);
-    return NOTES.map((n, i) => (n.isBlack ? i : -1)).filter((i) => i >= 0);
+    return getAvailableIndices(mode);
   }, [mode]);
 
   function generateChord() {
@@ -76,62 +47,20 @@ export default function Home() {
       return;
     }
 
-    const audioContext = new window.AudioContext();
-
-    // play all notes simultaneously for 900ms
-    const now = audioContext.currentTime;
-    const duration = 0.9;
-    const gainNode = audioContext.createGain();
-    gainNode.gain.value = 0.2;
-    gainNode.connect(audioContext.destination);
-
-    const oscillators: OscillatorNode[] = [];
-    try {
-      currentChord.forEach(({ index, octave }) => {
-        const oscillatorNode = audioContext.createOscillator();
-        oscillatorNode.type = "sine";
-        oscillatorNode.frequency.value = NOTES[index].freq * Math.pow(2, differentOctaves ? octave : 0);
-        oscillatorNode.connect(gainNode);
-        oscillatorNode.start(now);
-        oscillatorNode.stop(now + duration);
-        oscillators.push(oscillatorNode);
-
-        oscillatorNode.onended = () => {
-          // remove from oscilators
-          const idx = oscillators.indexOf(oscillatorNode);
-          if (idx >= 0) oscillators.splice(idx, 1);
-          // close audio context when all done
-          if (oscillators.length === 0) {
-            audioContext.close();
-          }
-        };
-      });
-    } catch (e) {
-      console.warn("Audio error", e);
-    }
+    playChordWithOctave(currentChord, 0.9, differentOctaves);
 
     setStatus("Playing...");
     setTimeout(() => {
       setStatus("Now pick the notes you heard");
-    }, duration * 1000 + 100);
+    }, 900 + 100);
   }
 
   function playNote(noteIndex: number) {
-    const audioContext = new window.AudioContext();
-    const gainNode = audioContext.createGain();
-    gainNode.gain.value = 0.2;
-    gainNode.connect(audioContext.destination);
-
-    const oscillatorNode = audioContext.createOscillator();
-    oscillatorNode.type = "sine";
-    oscillatorNode.frequency.value = NOTES[noteIndex].freq;
-    oscillatorNode.connect(gainNode);
-    oscillatorNode.start();
-    oscillatorNode.stop(audioContext.currentTime + 0.5);
-
-    oscillatorNode.onended = () => {
-      audioContext.close();
-    };
+    if (playNotes) {
+      import("@/services/audio").then(({ playNote: play }) => {
+        play(noteIndex);
+      });
+    }
   }
 
   function toggleSelect(selectionIndex: number) {
@@ -163,12 +92,6 @@ export default function Home() {
 
       return next;
     });
-  }
-
-  function arraysEqualAsSets(a: number[], b: number[]) {
-    if (a.length !== b.length) return false;
-    const sa = new Set(a);
-    return b.every((v) => sa.has(v));
   }
 
   function evaluate(selection: number[]) {
@@ -310,18 +233,6 @@ export default function Home() {
 
       <div style={{ marginTop: 24 }}>
         <RevealAnswer answer={currentChord} />
-      </div>
-
-      {/* Bottom right corner link to /games/melody */}
-      <div className="fixed bottom-4 right-4">
-        <Button
-          href="/games/melody"
-          variant="light"
-          className="gap-1"
-          startContent={<span className="material-symbols-outlined">music_note</span>}
-        >
-          Try Melody Game
-        </Button>
       </div>
     </main>
   );
