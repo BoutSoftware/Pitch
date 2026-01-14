@@ -316,6 +316,7 @@ export default function Home() {
       <div className="fixed bottom-4 right-4">
         <Button
           href="/games/melody"
+          as="a"
           variant="light"
           className="gap-1"
           startContent={<span className="material-symbols-outlined">music_note</span>}
