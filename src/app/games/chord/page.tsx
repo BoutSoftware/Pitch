@@ -5,23 +5,23 @@ import { Select, SelectItem } from "@heroui/select";
 import { Switch } from "@heroui/switch";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
-
 import type { Mode } from "@/types/types";
 import { NOTES, getAvailableIndices } from "@/types/types";
-import {
-  playNote,
-  playChordWithOctave,
-} from "@/services/audio";
+import { playChord, playNote, } from "@/services/audio";
 import { sampleIndices, arraysEqualAsSets } from "@/utils/notes";
 
 export default function Home() {
-  const [level, setLevel] = useState<number>(1); // 1..4
-  const [mode, setMode] = useState<Mode>("whites");
+  const [options, setOptions] = useState({
+    mode: "whites" as Mode,
+    level: 1,
+    playNotes: false,
+    differentOctaves: true,
+  });
   const [currentChord, setCurrentChord] = useState<{ index: number; octave: -1 | 0 | 1 }[]>([]);
   const [userSelections, setUserSelections] = useState<number[]>([]);
   const [status, setStatus] = useState<string>("Press Play to start");
-  const [playNotes, setPlayNotes] = useState<boolean>(false);
-  const [differentOctaves, setDifferentOctaves] = useState<boolean>(true);
+
+  const { mode, level, playNotes, differentOctaves } = options;
 
   const availableIndices = React.useMemo(() => {
     return getAvailableIndices(mode);
@@ -47,7 +47,7 @@ export default function Home() {
       return;
     }
 
-    playChordWithOctave(currentChord, 0.9, differentOctaves);
+    playChord(currentChord, 0.9, differentOctaves);
 
     setStatus("Playing...");
     setTimeout(() => {
@@ -55,15 +55,8 @@ export default function Home() {
     }, 900 + 100);
   }
 
-  function playNote(noteIndex: number) {
-    if (playNotes) {
-      import("@/services/audio").then(({ playNote: play }) => {
-        play(noteIndex);
-      });
-    }
-  }
 
-  function toggleSelect(selectionIndex: number) {
+  function toggleNoteSelect(selectionIndex: number) {
     if (!currentChord.length) return;
 
     // allow toggling until user selected same number as chord length (we still allow deselect)
@@ -87,14 +80,14 @@ export default function Home() {
 
       // check for evaluation
       if (next.length === currentChord.length) {
-        next = evaluate(next);
+        next = validateSelection(next);
       }
 
       return next;
     });
   }
 
-  function evaluate(selection: number[]) {
+  function validateSelection(selection: number[]) {
     const chordIndices = currentChord.map((c) => c.index);
     if (arraysEqualAsSets(selection, chordIndices)) {
       setStatus("Correct");
@@ -115,7 +108,7 @@ export default function Home() {
 
   useEffect(() => {
     generateChord();
-  }, [mode, level]);
+  }, [options]);
 
   return (
     <main className="p-6">
@@ -129,10 +122,10 @@ export default function Home() {
             className="inline-block align-middle h-8 w-auto"
           />
           <h1 className="text-3xl font-extrabold bg-linear-to-r from-primary via-purple-500 to-pink-500 text-transparent bg-clip-text w-fit">
-            Pitch Guess
+            Chord Identifier
           </h1>
         </div>
-        <p className="text-sm text-gray-500 mt-1">
+        <p className="text-sm text-foreground/50 mt-1">
           Hear a chord and pick the notes. Train your ear — whites, blacks or chromatic.
         </p>
       </div>
@@ -144,7 +137,7 @@ export default function Home() {
             className="min-w-40 w-1/2"
             selectedKeys={[mode]}
             selectionMode="single"
-            onSelectionChange={(keys) => setMode(Array.from(keys)[0] as Mode)}
+            onSelectionChange={(keys) => setOptions({ ...options, mode: Array.from(keys)[0] as Mode })}
           >
             <SelectItem key={"whites"}>Whites</SelectItem>
             <SelectItem key={"blacks"}>Blacks</SelectItem>
@@ -156,7 +149,7 @@ export default function Home() {
             className="min-w-40 w-1/2"
             selectedKeys={[String(level)]}
             selectionMode="single"
-            onSelectionChange={(keys) => setLevel(Number(Array.from(keys)[0]))}
+            onSelectionChange={(keys) => setOptions({ ...options, level: Number(Array.from(keys)[0]) })}
           >
             <SelectItem key={"1"}>1</SelectItem>
             <SelectItem key={"2"}>2</SelectItem>
@@ -167,13 +160,13 @@ export default function Home() {
 
         <Switch
           isSelected={playNotes}
-          onValueChange={setPlayNotes}
+          onValueChange={(value) => setOptions({ ...options, playNotes: value })}
         >
           Play Notes
         </Switch>
         <Switch
           isSelected={differentOctaves}
-          onValueChange={setDifferentOctaves}
+          onValueChange={(value) => setOptions({ ...options, differentOctaves: value })}
         >
           Different Octaves
         </Switch>
@@ -210,7 +203,7 @@ export default function Home() {
           return (
             <Button
               key={note.name}
-              onPress={() => toggleSelect(index)}
+              onPress={() => toggleNoteSelect(index)}
               disabled={disabled}
               isIconOnly
               className={`py-4! h-auto
@@ -234,6 +227,21 @@ export default function Home() {
       <div style={{ marginTop: 24 }}>
         <RevealAnswer answer={currentChord} />
       </div>
+
+      {/* FAB for Home */}
+      <Button
+        href="/games"
+        className="fixed bottom-6 right-6"
+        radius="full"
+        aria-label="Go to Games Home"
+        variant="faded"
+        as="a"
+      >
+        <span className="material-symbols-outlined text-2xl text-foreground">
+          home
+        </span>
+        Home
+      </Button>
     </main>
   );
 }

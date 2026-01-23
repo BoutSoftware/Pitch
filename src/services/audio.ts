@@ -22,41 +22,6 @@ export function playNote(noteIndex: number): void {
     };
 }
 
-export function playChord(
-    noteIndices: number[],
-    duration: number = 0.9
-): void {
-    const audioContext = new window.AudioContext();
-    const now = audioContext.currentTime;
-    const gainNode = audioContext.createGain();
-    gainNode.gain.value = GAIN_VALUE;
-    gainNode.connect(audioContext.destination);
-
-    const oscillators: OscillatorNode[] = [];
-
-    try {
-        noteIndices.forEach((index) => {
-            const oscillatorNode = audioContext.createOscillator();
-            oscillatorNode.type = "sine";
-            oscillatorNode.frequency.value = NOTES[index].freq;
-            oscillatorNode.connect(gainNode);
-            oscillatorNode.start(now);
-            oscillatorNode.stop(now + duration);
-            oscillators.push(oscillatorNode);
-
-            oscillatorNode.onended = () => {
-                const idx = oscillators.indexOf(oscillatorNode);
-                if (idx >= 0) oscillators.splice(idx, 1);
-                if (oscillators.length === 0) {
-                    audioContext.close();
-                }
-            };
-        });
-    } catch (e) {
-        console.warn("Audio error", e);
-    }
-}
-
 export function playMelody(
     chords: number[][],
     chordDuration: number = 0.6,
@@ -93,8 +58,8 @@ export function playMelody(
     return totalDuration;
 }
 
-export function playChordWithOctave(
-    noteIndices: Array<{ index: number; octave: -1 | 0 | 1 }>,
+export function playChord(
+    noteIndices: Array<{ index: number; octave?: -1 | 0 | 1 }>,
     duration: number = 0.9,
     applyOctave: boolean = true
 ): void {
@@ -110,8 +75,7 @@ export function playChordWithOctave(
         noteIndices.forEach(({ index, octave }) => {
             const oscillatorNode = audioContext.createOscillator();
             oscillatorNode.type = "sine";
-            oscillatorNode.frequency.value =
-                NOTES[index].freq * Math.pow(2, applyOctave ? octave : 0);
+            oscillatorNode.frequency.value = NOTES[index].freq * Math.pow(2, applyOctave && octave ? octave : 0);
             oscillatorNode.connect(gainNode);
             oscillatorNode.start(now);
             oscillatorNode.stop(now + duration);

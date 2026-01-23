@@ -9,14 +9,18 @@ import { getAvailableIndices, NOTES, type Mode } from "@/types/types";
 import { playNote, playMelody } from "@/services/audio";
 import { sampleIndices, arraysEqualAsSets as arraysEqual } from "@/utils/notes";
 
-export default function Home() {
-  const [chordComplexity, setComplexity] = useState<number>(1); // notes per chord
-  const [length, setLength] = useState<number>(2); // number of chords
-  const [mode, setMode] = useState<Mode>("whites");
-  const [playNotes, setPlayNotes] = useState<boolean>(false); // play note sounds when selecting (sample mode)
+export default function MelodyGamePage() {
+  const [options, setOptions] = useState({
+    chordComplexity: 1, // notes per chord
+    length: 2, // number of chords
+    mode: "whites" as Mode, // mode of notes
+    playNotes: false // play note sounds when selecting (sample mode)
+  });
   const [currentMelody, setCurrentMelody] = useState<number[][]>([]); // Current generated melody
   const [userSelections, setUserSelections] = useState<number[][]>([]); // Total user selections chord by chord
   const [status, setStatus] = useState<string>("Press Play to start");
+
+  const { chordComplexity, length, mode, playNotes } = options;
 
   const availableNoteIndexes = React.useMemo(() => {
     return getAvailableIndices(mode);
@@ -45,12 +49,6 @@ export default function Home() {
     setTimeout(() => {
       setStatus("Now pick the notes you heard (chord by chord)");
     }, totalDuration * 1000 + 100);
-  }
-
-  function playNote(noteIndex: number) {
-    if (playNotes) {
-      playNote(noteIndex);
-    }
   }
 
   function toggleNoteSelect(selectionIndex: number) {
@@ -151,7 +149,7 @@ export default function Home() {
             className="min-w-40 w-1/2"
             selectedKeys={[mode]}
             selectionMode="single"
-            onSelectionChange={(keys) => setMode(Array.from(keys)[0] as Mode)}
+            onSelectionChange={(keys) => setOptions({ ...options, mode: Array.from(keys)[0] as Mode })}
           >
             <SelectItem key={"whites"}>Whites</SelectItem>
             <SelectItem key={"blacks"}>Blacks</SelectItem>
@@ -163,7 +161,7 @@ export default function Home() {
             className="min-w-40 w-1/2"
             selectedKeys={[String(chordComplexity)]}
             selectionMode="single"
-            onSelectionChange={(keys) => setComplexity(Number(Array.from(keys)[0]))}
+            onSelectionChange={(keys) => setOptions({ ...options, chordComplexity: Number(Array.from(keys)[0]) })}
           >
             <SelectItem key={"1"}>1 note</SelectItem>
             <SelectItem key={"2"}>2 notes</SelectItem>
@@ -176,7 +174,7 @@ export default function Home() {
             className="min-w-40 w-1/2"
             selectedKeys={[String(length)]}
             selectionMode="single"
-            onSelectionChange={(keys) => setLength(Number(Array.from(keys)[0]))}
+            onSelectionChange={(keys) => setOptions({ ...options, length: Number(Array.from(keys)[0]) })}
           >
             <SelectItem key={"2"}>2 chords</SelectItem>
             <SelectItem key={"3"}>3 chords</SelectItem>
@@ -187,7 +185,7 @@ export default function Home() {
 
         <Switch
           isSelected={playNotes}
-          onValueChange={setPlayNotes}
+          onValueChange={(value) => setOptions({ ...options, playNotes: value })}
         >
           Play Notes
         </Switch>
@@ -259,6 +257,21 @@ export default function Home() {
       <div style={{ marginTop: 24 }}>
         <RevealAnswer answer={currentMelody} />
       </div>
+
+      {/* FAB for Home */}
+      <Button
+        href="/games"
+        className="fixed bottom-6 right-6"
+        radius="full"
+        aria-label="Go to Games Home"
+        variant="faded"
+        as="a"
+      >
+        <span className="material-symbols-outlined text-2xl text-foreground">
+          home
+        </span>
+        Home
+      </Button>
     </main>
   );
 }
