@@ -5,7 +5,7 @@ import { Select, SelectItem } from "@heroui/select";
 import { Switch } from "@heroui/switch";
 import Image from "next/image";
 import React, { useEffect, useState } from "react";
-import { getAvailableIndices, NOTES, type Mode } from "@/types/types";
+import { getAvailableIndices, NOTES, type Mode } from "@/types/notes";
 import { playNote, playMelody } from "@/services/audio";
 import { sampleIndices, arraysEqualAsSets as arraysEqual } from "@/utils/notes";
 

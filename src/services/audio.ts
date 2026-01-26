@@ -1,4 +1,4 @@
-import { NOTES } from "@/types/types";
+import { NOTES } from "@/types/notes";
 
 
 const GAIN_VALUE = 0.2;
