@@ -9,15 +9,6 @@ import React, { useEffect } from 'react';
 
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!isPending && !session) {
-      // Redirect to login page or show a message
-      console.log('No active session, redirecting to login...');
-      router.push('/exp/Auth/login');
-    }
-  }, [session, isPending]);
 
   return (
     <main className='p-4'>

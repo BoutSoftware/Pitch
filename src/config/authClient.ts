@@ -1,4 +1,4 @@
-import { createAuthClient } from "better-auth/react"
+import { createAuthClient } from "better-auth/react";
 import { BETTER_AUTH_URL } from ".";
 
 export const authClient = createAuthClient({

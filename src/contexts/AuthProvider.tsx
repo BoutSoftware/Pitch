@@ -7,13 +7,13 @@ import { useEffect } from 'react';
 
 const PUBLIC_ROUTES = ['/exp/Auth/login', '/exp/Auth/signup'];
 
-export function AuthProvider({ initialSession, children }: { initialSession: SessionData | null; children: React.ReactNode }) {
+export function AuthProviderClient({ initialSession, children }: { initialSession?: SessionData | null; children: React.ReactNode }) {
     const { data: sessionData, isPending } = useSession();
     const router = useRouter();
     const pathname = usePathname();
 
     useEffect(() => {
-        const session = sessionData ?? initialSession;
+        const session = sessionData ?? (isPending ? initialSession : null);
         if (!session && isPending) {
             return;
         }
@@ -27,7 +27,8 @@ export function AuthProvider({ initialSession, children }: { initialSession: Ses
         } else if (session && isPublicRoute) {
             router.push('/exp/Auth/dashboard');
         }
-    }, [sessionData, initialSession, isPending, router, pathname]);
+    }, [sessionData?.user.id, initialSession, isPending, router, pathname]);
 
     return <>{children}</>;
 }
+

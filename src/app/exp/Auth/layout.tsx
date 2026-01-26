@@ -1,6 +1,4 @@
-import { auth } from '@/config/auth';
-import { AuthProvider } from '@/contexts/AuthProvider';
-import { headers } from 'next/headers';
+import { AuthProviderServer } from '@/contexts/AuthProviderServer';
 import React from 'react';
 
 export const metadata = {
@@ -13,13 +11,9 @@ export default async function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const initialSession = await auth.api.getSession({
-    headers: await headers()
-  });
-
   return (
-    <AuthProvider initialSession={initialSession}>
+    <AuthProviderServer>
       {children}
-    </AuthProvider>
+    </AuthProviderServer>
   );
 }

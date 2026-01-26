@@ -22,9 +22,6 @@ export default function LoginPage() {
       email: form.email,
       password: form.password,
       rememberMe: false,
-      callbackURL: "/exp/Auth/dashboard"
-    }, {
-      redirect: 'follow'
     });
     setForm({ ...form, loading: false });
 

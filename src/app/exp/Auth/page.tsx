@@ -1,16 +1,15 @@
-"use client"
+import { auth } from "@/config/auth";
+import { headers } from "next/headers";
+import { redirect } from "next/navigation";
 
-import { useSession } from "@/config/authClient"
-import { redirect } from "next/navigation"
+export default async function IndexPage() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
-export default function IndexPage() {
-  const { data: session, isPending } = useSession()
-
-  if (!isPending) {
-    if (session) {
-      redirect('/exp/Auth/dashboard')
-    } else {
-      redirect('/exp/Auth/login')
-    }
+  if (session) {
+    redirect('/exp/Auth/dashboard');
+  } else {
+    redirect('/exp/Auth/login');
   }
 }
