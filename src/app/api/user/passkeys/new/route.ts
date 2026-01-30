@@ -3,7 +3,7 @@ import { prisma } from '@/config/db';
 import { generateRegistrationOptions, RegistrationResponseJSON, verifyRegistrationResponse } from '@simplewebauthn/server';
 import { BETTER_AUTH_URL } from '@/config';
 import { getSessionFromHeaders } from '@/utils';
-import { isoUint8Array } from '@simplewebauthn/server/helpers';
+import { isoBase64URL, isoUint8Array } from '@simplewebauthn/server/helpers';
 
 export async function GET(request: NextRequest) {
     try {
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         await prisma.passkey.create({
             data: {
                 userId: user.id,
-                credentialID: verification.registrationInfo.credential.id,
+                credentialID: Buffer.from(isoBase64URL.toBuffer(credential.rawId)).toString('base64'),
                 publicKey: Buffer.from(verification.registrationInfo.credential.publicKey).toString('base64'),
                 transports: verification.registrationInfo.credential.transports?.join(',') || null,
                 aaguid: verification.registrationInfo!.aaguid,

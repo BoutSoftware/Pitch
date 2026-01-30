@@ -3,6 +3,7 @@
 import { useSession } from '@/config/authClient';
 import { Button } from '@heroui/button';
 import { Spinner } from '@heroui/spinner';
+import { Card, CardBody, CardFooter, CardHeader } from '@heroui/card';
 import { Passkey } from '@prisma-gen/client';
 import { startRegistration } from '@simplewebauthn/browser';
 import { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/server';
@@ -100,12 +101,21 @@ export default function UserPasskeysPage() {
       ) : passkeys.length === 0 ? (
         <p>No passkeys found for this user.</p>
       ) : (
-        <ul>
+        <ul className='grid grid-cols-2 gap-4 mt-8'>
           {passkeys.map((passkey) => (
-            <li key={passkey.id} className='mb-2'>
-              <strong>ID:</strong> {passkey.id} <br />
-              <strong>Created At:</strong> {new Date(passkey.createdAt).toLocaleString()} <br />
-              <strong>Updated At:</strong> {new Date(passkey.updatedAt).toLocaleString()}
+            <li key={passkey.id}>
+              <Card>
+                <CardHeader>
+                  <h2 className='text-lg font-semibold'>Passkey ID: {passkey.id}</h2>
+                </CardHeader>
+                <CardBody>
+                  <p><strong>Created At:</strong> {new Date(passkey.createdAt).toLocaleString()}</p>
+                  <p><strong>Updated At:</strong> {new Date(passkey.updatedAt).toLocaleString()}</p>
+                </CardBody>
+                <CardFooter>
+                  <Button variant='bordered' onPress={() => {/* Add any action here */ }}>Action</Button>
+                </CardFooter>
+              </Card>
             </li>
           ))}
         </ul>
