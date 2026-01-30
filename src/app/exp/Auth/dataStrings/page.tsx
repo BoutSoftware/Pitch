@@ -67,7 +67,7 @@ export default function UserDataStringsPage() {
           <h2 className='text-xl font-semibold mb-2'>Existing Data Strings:</h2>
           <div>
             {dataStrings.map((ds) => (
-              <DataStringCard key={ds.id} dataString={ds} passkeys={passkeys || []} />
+              <DataStringCard key={ds.id} dataString={ds} passkeys={passkeys || []} onDeleted={getDataStrings} />
             ))}
           </div>
         </section>
@@ -76,8 +76,30 @@ export default function UserDataStringsPage() {
   );
 }
 
-const DataStringCard = ({ dataString, passkeys }: { dataString: DataString; passkeys: PasskeyIDs[] }) => {
+const DataStringCard = ({ dataString, passkeys, onDeleted }: { dataString: DataString; passkeys: PasskeyIDs[]; onDeleted: () => void }) => {
   const [decryptedValue, setDecryptedValue] = React.useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = React.useState(false);
+
+  const handleDelete = async () => {
+    if (!confirm('Are you sure you want to delete this data string?')) return;
+
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/user/dataStrings/${dataString.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        onDeleted();
+      } else {
+        console.error('Failed to delete data string');
+      }
+    } catch (error) {
+      console.error('Error deleting data string:', error);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   const handleDecrypt = async () => {
     const passkey = passkeys.find((pk) => pk.id === dataString.passkeyId);
@@ -118,8 +140,19 @@ const DataStringCard = ({ dataString, passkeys }: { dataString: DataString; pass
 
   return (
     <Card className='mb-4'>
-      <CardHeader>
+      <CardHeader className='flex justify-between items-center'>
         <h3 className='text-lg'><strong>Data String ID:</strong> {dataString.id}</h3>
+        <Button
+          isIconOnly
+          color='danger'
+          variant='light'
+          size='sm'
+          onPress={handleDelete}
+          isLoading={isDeleting}
+          aria-label='Delete data string'
+        >
+          <span className='material-symbols-outlined'>delete</span>
+        </Button>
       </CardHeader>
       <CardBody className='gap-2'>
         <p><strong>Encrypted Data:</strong> {dataString.encryptedData}</p>
