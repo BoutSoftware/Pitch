@@ -24,6 +24,8 @@ model User {
   Passkeys    Passkey[]
   DataStrings DataString[]
   Challenges  Challenge[]
+  Chats       Chat[]
+  Messages    Message[]
   sessions    Session[]
   accounts    Account[]
 
@@ -76,6 +78,49 @@ model Challenge {
   userId String @db.ObjectId
 
   User User @relation(fields: [userId], references: [id])
+}
+
+model Chat {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+
+  title    String?
+  scenario String
+  language String
+  level    String
+
+  userId String @db.ObjectId
+
+  Messages Message[] @relation("ChatMessages")
+  User     User      @relation(fields: [userId], references: [id])
+}
+
+model Message {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  createdAt DateTime @default(now())
+
+  role        Role
+  text        String
+  translation Json?
+
+  chatId String  @db.ObjectId
+  userId String? @db.ObjectId
+
+  Chat Chat  @relation("ChatMessages", fields: [chatId], references: [id])
+  User User? @relation(fields: [userId], references: [id])
+}
+
+// --------------- ENUMS & TYPES ---------------
+
+enum Role {
+  USER
+  MODEL
+}
+
+type TranslationPiece {
+  text              String // the original text of this piece
+  translation       String // the translated text of this piece
+  translationPieces TranslationPiece[] // Optional nested pieces if this piece was further split for translation
 }
 
 // ----------- BETTER AUTH MODELS ------------
