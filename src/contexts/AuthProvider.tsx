@@ -1,34 +1,20 @@
-'use client';
+import { auth } from "@/config/auth";
+import { AuthProviderClient } from "@/contexts/AuthProviderClient";
+import { headers } from "next/headers";
 
-import { SessionData } from '@/config/auth';
-import { useSession } from '@/config/authClient';
-import { useRouter, usePathname } from 'next/navigation';
-import { useEffect } from 'react';
+/**
+ * Server Component, used to wrap parts of the app that need authentication protection.
+ * Used to get an initial session to avoid flickering on the client side
+ * 
+ * @param children The children components that will have access to the authentication protection. 
+ * @returns 
+ */
+export async function AuthProvider({ children }: { children: React.ReactNode }) {
+  const session = await auth.api.getSession({ headers: await headers() });
 
-const PUBLIC_ROUTES = ['/exp/Auth/login', '/exp/Auth/signup'];
-
-export function AuthProviderClient({ initialSession, children }: { initialSession?: SessionData | null; children: React.ReactNode }) {
-    const { data: sessionData, isPending } = useSession();
-    const router = useRouter();
-    const pathname = usePathname();
-
-    useEffect(() => {
-        const session = sessionData ?? (isPending ? initialSession : null);
-        if (!session && isPending) {
-            return;
-        }
-
-        const isPublicRoute = PUBLIC_ROUTES.some((route) =>
-            pathname.startsWith(route)
-        );
-
-        if (!session && !isPublicRoute) {
-            router.push('/exp/Auth/login');
-        } else if (session && isPublicRoute) {
-            router.push('/exp/Auth/dashboard');
-        }
-    }, [sessionData?.user.id, initialSession, isPending, router, pathname]);
-
-    return <>{children}</>;
+  return (
+    <AuthProviderClient initialSession={session}>
+      {children}
+    </AuthProviderClient>
+  );
 }
-

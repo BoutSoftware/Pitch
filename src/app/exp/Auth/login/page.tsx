@@ -21,7 +21,7 @@ export default function LoginPage() {
     const { data, error } = await authClient.signIn.email({
       email: form.email,
       password: form.password,
-      rememberMe: false,
+      rememberMe: true,
     });
     setForm({ ...form, loading: false });
 

@@ -1,4 +1,4 @@
-import { prisma } from "@/config/db";
+import prisma from "@/config/db";
 import { getSessionFromHeaders } from "@/utils";
 import { NextRequest, NextResponse } from "next/server";
 

@@ -7,5 +7,12 @@ export function base64ToUint8Array(b64: string) {
 
 export async function getSessionFromHeaders() {
     const requestHeaders = await headers();
-    return JSON.parse(requestHeaders.get('x-user-session') || '') as SessionData;
+
+    const sessionHeader = requestHeaders.get('x-user-session');
+
+    if (!sessionHeader) {
+        throw new Error("No session found in headers");
+    }
+
+    return JSON.parse(sessionHeader) as SessionData;
 }

@@ -1,4 +1,4 @@
-import { AuthProviderServer } from '@/contexts/AuthProviderServer';
+import { AuthProvider } from '@/contexts/AuthProvider';
 import React from 'react';
 
 export const metadata = {
@@ -12,8 +12,8 @@ export default async function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthProviderServer>
+    <AuthProvider>
       {children}
-    </AuthProviderServer>
+    </AuthProvider>
   );
 }
