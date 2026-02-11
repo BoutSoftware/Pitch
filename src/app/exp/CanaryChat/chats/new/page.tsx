@@ -4,6 +4,7 @@ import { Card, CardBody, CardHeader } from "@heroui/card";
 import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Button } from "@heroui/button";
+import { useRouter } from "next/navigation";
 
 import React, { useState } from "react";
 
@@ -26,11 +27,15 @@ export default function NewChatPage() {
     language: LANGUAGES[0],
     level: LEVELS[1],
   });
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
   async function create(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return;
 
-    const res = await fetch("/api/exp/CanaryChat/chats", {
+    setLoading(true);
+    const resBody = await fetch("/api/exp/CanaryChat/chats", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -39,10 +44,20 @@ export default function NewChatPage() {
           ? form.customScenario
           : form.scenario
       }),
-    });
+    }).then((res) => res.json())
+      .catch((err) => {
+        console.error("Failed to create chat", err);
+        return null;
+      });
 
-    const data = await res.json();
-    if (data?.id) location.href = `/exp/CanaryChat/chats/${data.id}`;
+    if (!resBody || resBody.code !== "OK") {
+      console.error("Failed to create chat", resBody);
+      setLoading(false);
+      return;
+    }
+
+    if (resBody.data?.id) router.push(`/exp/CanaryChat/chats/${resBody.data.id}`);
+    setLoading(false);
   }
 
   const handleChange = (key: string, value: string) => {
@@ -67,12 +82,14 @@ export default function NewChatPage() {
               label="Scenario"
               selectedKeys={[form.scenario]}
               onChange={(e) => handleChange("scenario", e.target.value)}
-            // description="I'm at <place>, talking to <person>, about <topic> while <situation>"
             >
               {["New scenario", ...SCENARIOS].map((scenarioItem) => (
                 <SelectItem key={scenarioItem} textValue={scenarioItem}>
-                  <span className={`w-full text-wrap ${scenarioItem === "New scenario" ? "font-semibold text-medium" : ""}`}>
-                    {scenarioItem}
+                  <span className={`w-full text-wrap ${scenarioItem === "New scenario" ? "font-semibold text-medium items-center flex gap-1" : ""}`}>
+                    {scenarioItem === "New scenario"
+                      ? <><span className="material-symbols-outlined">add</span> New scenario!</>
+                      : scenarioItem
+                    }
                   </span>
                 </SelectItem>
               ))}
@@ -107,7 +124,7 @@ export default function NewChatPage() {
                 </SelectItem>
               ))}
             </Select>
-            <Button type="submit" color="primary" className="mt-4">
+            <Button type="submit" color="primary" className="mt-4" isLoading={loading}>
               Create
             </Button>
           </form>

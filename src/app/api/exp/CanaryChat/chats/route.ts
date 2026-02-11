@@ -6,13 +6,33 @@ export async function GET() {
     const { user } = await getSessionFromHeaders();
 
     const chats = await prisma.chat.findMany({
-        orderBy: { createdAt: "desc" },
         where: {
             userId: user.id
+        },
+        include: {
+            Messages: {
+                orderBy: { createdAt: "desc" },
+                take: 1,
+                select: {
+                    id: true,
+                    createdAt: true,
+                    text: true,
+                }
+            }
         }
     });
 
-    return NextResponse.json({ data: chats, code: "OK" }, { status: 200 });
+    const sortedChats = chats.map(chat => ({
+        ...chat,
+        latestMessage: chat.Messages[0] || null,
+        Messages: undefined,
+    })).sort((a, b) => {
+        const aDate = a.latestMessage ? a.latestMessage.createdAt : a.createdAt;
+        const bDate = b.latestMessage ? b.latestMessage.createdAt : b.createdAt;
+        return bDate.getTime() - aDate.getTime();
+    })
+
+    return NextResponse.json({ data: sortedChats, code: "OK" }, { status: 200 });
 }
 
 export async function POST(req: Request) {

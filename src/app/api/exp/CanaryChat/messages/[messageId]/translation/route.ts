@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/config/db";
-import { translateText } from "@/services/gemini";
+import { generateTranslationPieces } from "@/services/gemini";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ messageId: string }> }) {
     const { messageId } = await params;
@@ -28,7 +28,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ me
         return NextResponse.json({ code: "OK", data: message }, { status: 200 });
     }
 
-    const translatedMessage = await translateText(message.text, targetLanguage);
+    const translatedMessage = await generateTranslationPieces(message.text, targetLanguage);
 
     const updatedMessage = await prisma.message.update({
         where: { id: messageId },

@@ -10,6 +10,7 @@
         "@heroui/card": "^2.2.27",
         "@heroui/input": "^2.4.31",
         "@heroui/link": "^2.2.25",
+        "@heroui/modal": "^2.2.27",
         "@heroui/popover": "^2.3.30",
         "@heroui/select": "^2.4.31",
         "@heroui/spinner": "^2.2.27",
@@ -190,6 +191,8 @@
 
     "@heroui/listbox": ["@heroui/listbox@2.3.29", "", { "dependencies": { "@heroui/aria-utils": "2.2.27", "@heroui/divider": "2.2.22", "@heroui/react-utils": "2.1.14", "@heroui/shared-utils": "2.1.12", "@heroui/use-is-mobile": "2.2.12", "@react-aria/focus": "3.21.3", "@react-aria/interactions": "3.26.0", "@react-aria/listbox": "3.15.1", "@react-stately/list": "3.13.2", "@react-types/shared": "3.32.1", "@tanstack/react-virtual": "3.11.3" }, "peerDependencies": { "@heroui/system": ">=2.4.18", "@heroui/theme": ">=2.4.24", "react": ">=18 || >=19.0.0-rc.0", "react-dom": ">=18 || >=19.0.0-rc.0" } }, "sha512-WROUwkF3biVeurslpgXKdC+e++VWnXBCWqs2poUbHZk+E+a9MOZQFaQZo5ypfG8xa80BSdUh4qffin1EixGWLA=="],
 
+    "@heroui/modal": ["@heroui/modal@2.2.27", "", { "dependencies": { "@heroui/dom-animation": "2.1.10", "@heroui/framer-utils": "2.1.26", "@heroui/react-utils": "2.1.14", "@heroui/shared-icons": "2.1.10", "@heroui/shared-utils": "2.1.12", "@heroui/use-aria-button": "2.2.21", "@heroui/use-aria-modal-overlay": "2.2.20", "@heroui/use-disclosure": "2.2.18", "@heroui/use-draggable": "2.1.19", "@heroui/use-viewport-size": "2.0.1", "@react-aria/dialog": "3.5.32", "@react-aria/focus": "3.21.3", "@react-aria/overlays": "3.31.0", "@react-stately/overlays": "3.6.21" }, "peerDependencies": { "@heroui/system": ">=2.4.18", "@heroui/theme": ">=2.4.24", "framer-motion": ">=11.5.6 || >=12.0.0-alpha.1", "react": ">=18 || >=19.0.0-rc.0", "react-dom": ">=18 || >=19.0.0-rc.0" } }, "sha512-3RSjg0+g1uPDoO0EpKDpaEcGnuYHW0xUQeyY52tDQjbJyZ3f1mAmTFCtEUKMLPjg9OXD9INUn9Gor0ytR5PV0g=="],
+
     "@heroui/popover": ["@heroui/popover@2.3.30", "", { "dependencies": { "@heroui/aria-utils": "2.2.27", "@heroui/button": "2.2.30", "@heroui/dom-animation": "2.1.10", "@heroui/framer-utils": "2.1.26", "@heroui/react-utils": "2.1.14", "@heroui/shared-utils": "2.1.12", "@heroui/use-aria-button": "2.2.21", "@heroui/use-aria-overlay": "2.0.5", "@heroui/use-safe-layout-effect": "2.1.8", "@react-aria/dialog": "3.5.32", "@react-aria/focus": "3.21.3", "@react-aria/overlays": "3.31.0", "@react-stately/overlays": "3.6.21", "@react-types/overlays": "3.9.2" }, "peerDependencies": { "@heroui/system": ">=2.4.18", "@heroui/theme": ">=2.4.24", "framer-motion": ">=11.5.6 || >=12.0.0-alpha.1", "react": ">=18 || >=19.0.0-rc.0", "react-dom": ">=18 || >=19.0.0-rc.0" } }, "sha512-PC0E2yo1KGMZjlCzuzY3wAsCVYG8K3LTCBDZSDfoqbSaOxO3uktqITc8YmYafaI0OqjbTmzLqIWtR08UAAwHCg=="],
 
     "@heroui/react-rsc-utils": ["@heroui/react-rsc-utils@2.1.9", "", { "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0" } }, "sha512-e77OEjNCmQxE9/pnLDDb93qWkX58/CcgIqdNAczT/zUP+a48NxGq2A2WRimvc1uviwaNL2StriE2DmyZPyYW7Q=="],
@@ -220,11 +223,19 @@
 
     "@heroui/use-aria-link": ["@heroui/use-aria-link@2.2.22", "", { "dependencies": { "@react-aria/focus": "3.21.3", "@react-aria/interactions": "3.26.0", "@react-aria/utils": "3.32.0", "@react-types/link": "3.6.5", "@react-types/shared": "3.32.1" }, "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0" } }, "sha512-T7wESiV9IBqe5MILMZ1pL+GIWxyPVj7ag/KUhZUH3v/dm94m+f2Ua7rXxzI+hj2H51s189YP+Eb1PagHMDrfPg=="],
 
+    "@heroui/use-aria-modal-overlay": ["@heroui/use-aria-modal-overlay@2.2.20", "", { "dependencies": { "@heroui/use-aria-overlay": "2.0.5", "@react-aria/overlays": "3.31.0", "@react-aria/utils": "3.32.0", "@react-stately/overlays": "3.6.21" }, "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0", "react-dom": ">=18 || >=19.0.0-rc.0" } }, "sha512-AIYfpnpiRVJm3InKlroGqQSZ1hjBI0Y5oMhMrXuQqrySsMKzMye3zMcEBWf8dEho1l+/U0dgNIUJFbkEFsOc8w=="],
+
     "@heroui/use-aria-multiselect": ["@heroui/use-aria-multiselect@2.4.20", "", { "dependencies": { "@react-aria/i18n": "3.12.14", "@react-aria/interactions": "3.26.0", "@react-aria/label": "3.7.23", "@react-aria/listbox": "3.15.1", "@react-aria/menu": "3.19.4", "@react-aria/selection": "3.27.0", "@react-aria/utils": "3.32.0", "@react-stately/form": "3.2.2", "@react-stately/list": "3.13.2", "@react-stately/menu": "3.9.9", "@react-types/button": "3.14.1", "@react-types/overlays": "3.9.2", "@react-types/shared": "3.32.1" }, "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0", "react-dom": ">=18 || >=19.0.0-rc.0" } }, "sha512-Tvbk2AaWfGYgL6Sn9SwsI+nSOcaD1e3wWGPEqHzeFgoSV6cT7oLY70TODD/HyTF+LKYPtYUbAenxDd80Z5j+Eg=="],
 
     "@heroui/use-aria-overlay": ["@heroui/use-aria-overlay@2.0.5", "", { "dependencies": { "@react-aria/focus": "3.21.3", "@react-aria/interactions": "3.26.0", "@react-aria/overlays": "3.31.0", "@react-types/shared": "3.32.1" }, "peerDependencies": { "react": ">=18", "react-dom": ">=18" } }, "sha512-2g1HxRoDzGAqIkW7s09WEXg+SAWslh+ZkIuixNAqsA60FHSAzQtGCNpbE2yFeMrukhbmRfS8t3hT2JVZVAXG7w=="],
 
+    "@heroui/use-callback-ref": ["@heroui/use-callback-ref@2.1.8", "", { "dependencies": { "@heroui/use-safe-layout-effect": "2.1.8" }, "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0" } }, "sha512-D1JDo9YyFAprYpLID97xxQvf86NvyWLay30BeVVZT9kWmar6O9MbCRc7ACi7Ngko60beonj6+amTWkTm7QuY/Q=="],
+
     "@heroui/use-data-scroll-overflow": ["@heroui/use-data-scroll-overflow@2.2.13", "", { "dependencies": { "@heroui/shared-utils": "2.1.12" }, "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0" } }, "sha512-zboLXO1pgYdzMUahDcVt5jf+l1jAQ/D9dFqr7AxWLfn6tn7/EgY0f6xIrgWDgJnM0U3hKxVeY13pAeB4AFTqTw=="],
+
+    "@heroui/use-disclosure": ["@heroui/use-disclosure@2.2.18", "", { "dependencies": { "@heroui/use-callback-ref": "2.1.8", "@react-aria/utils": "3.32.0", "@react-stately/utils": "3.11.0" }, "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0" } }, "sha512-aR/4oITXOyt8uze9EdfL/b2j8pg75dc92Q8FfoT17MibD6nKI1VmQDA+9CAtUwuKq6rSrEGqc14muO3GYpTH4g=="],
+
+    "@heroui/use-draggable": ["@heroui/use-draggable@2.1.19", "", { "dependencies": { "@react-aria/interactions": "3.26.0" }, "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0" } }, "sha512-pk0Oe4QLcjr1gndcuvq+8z6eoM+v3lvbmEDxbsEjeST9AwykfmT/60X+xrPFtCkfYldYXk1UxBPiGwrFs0lscQ=="],
 
     "@heroui/use-form-reset": ["@heroui/use-form-reset@2.0.1", "", { "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0" } }, "sha512-6slKWiLtVfgZnVeHVkM9eXgjwI07u0CUaLt2kQpfKPqTSTGfbHgCYJFduijtThhTdKBhdH6HCmzTcnbVlAxBXw=="],
 
@@ -233,6 +244,8 @@
     "@heroui/use-measure": ["@heroui/use-measure@2.1.8", "", { "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0" } }, "sha512-GjT9tIgluqYMZWfAX6+FFdRQBqyHeuqUMGzAXMTH9kBXHU0U5C5XU2c8WFORkNDoZIg1h13h1QdV+Vy4LE1dEA=="],
 
     "@heroui/use-safe-layout-effect": ["@heroui/use-safe-layout-effect@2.1.8", "", { "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0" } }, "sha512-wbnZxVWCYqk10XRMu0veSOiVsEnLcmGUmJiapqgaz0fF8XcpSScmqjTSoWjHIEWaHjQZ6xr+oscD761D6QJN+Q=="],
+
+    "@heroui/use-viewport-size": ["@heroui/use-viewport-size@2.0.1", "", { "peerDependencies": { "react": ">=18 || >=19.0.0-rc.0" } }, "sha512-blv8BEB/QdLePLWODPRzRS2eELJ2eyHbdOIADbL0KcfLzOUEg9EiuVk90hcSUDAFqYiJ3YZ5Z0up8sdPcR8Y7g=="],
 
     "@hexagon/base64": ["@hexagon/base64@1.1.28", "", {}, "sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw=="],
 
