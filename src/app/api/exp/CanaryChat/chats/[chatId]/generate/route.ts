@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/config/db";
+import prisma from "@/configs/db";
 import { generateMessage } from "@/services/gemini";
 
 export async function POST(req: Request, { params }: { params: Promise<{ chatId: string }> }) {

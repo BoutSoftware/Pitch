@@ -1,6 +1,6 @@
 "use client"
 
-import { signOut, useSession } from '@/config/authClient'
+import { signOut, useSession } from '@/configs/authClient'
 import { Button } from '@heroui/button'
 import { Link } from '@heroui/link'
 import { Spinner } from '@heroui/spinner'

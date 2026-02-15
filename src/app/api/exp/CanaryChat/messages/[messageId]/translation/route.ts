@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/config/db";
+import prisma from "@/configs/db";
 import { generateTranslationPieces } from "@/services/gemini";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ messageId: string }> }) {

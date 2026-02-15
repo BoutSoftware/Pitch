@@ -1,7 +1,7 @@
 @import url("https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined");
 
 @import "tailwindcss";
-@plugin "../config/hero.mts";
+@plugin "../configs/hero.mts";
 
 @source "../../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 @custom-variant dark (&:is(.dark *));

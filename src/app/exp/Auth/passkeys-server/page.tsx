@@ -1,5 +1,5 @@
-import { auth } from '@/config/auth';
-import { prisma } from '@/config/db';
+import { auth } from '@/configs/auth';
+import { prisma } from '@/configs/db';
 import { headers } from 'next/headers';
 
 export default async function UserPasskeysPage() {

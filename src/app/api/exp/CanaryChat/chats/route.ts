@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import prisma from "@/config/db";
-import { getSessionFromHeaders } from "@/utils";
+import prisma from "@/configs/db";
+import { getSessionFromHeaders } from "@/utils/auth";
 
 export async function GET() {
     const { user } = await getSessionFromHeaders();

@@ -1,4 +1,4 @@
-import { auth } from "@/config/auth";
+import { auth } from "@/configs/auth";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 

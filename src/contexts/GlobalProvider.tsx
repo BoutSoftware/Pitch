@@ -1,6 +1,7 @@
 "use client";
 
 import { HeroUIProvider } from "@heroui/system";
+import { ThemeProvider } from "bout-themes";
 import { useRouter } from "next/navigation";
 
 export function GlobalProvider({ children }: { children: React.ReactNode }) {
@@ -8,7 +9,9 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <HeroUIProvider navigate={router.push}>
-      {children}
+      <ThemeProvider useSystemTheme={true}>
+        {children}
+      </ThemeProvider>
     </HeroUIProvider>
   )
 }

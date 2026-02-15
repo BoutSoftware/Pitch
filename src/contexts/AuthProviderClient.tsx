@@ -1,7 +1,7 @@
 'use client';
 
-import { SessionData } from '@/config/auth';
-import { useSession } from '@/config/authClient';
+import { SessionData } from '@/configs/auth';
+import { useSession } from '@/configs/authClient';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 

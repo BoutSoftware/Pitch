@@ -6,8 +6,11 @@ export default function PasswordInput({ value, label, ...props }: { value: strin
   const [showPassword, setShowPassword] = React.useState(false);
 
   return (
-    <Input label={label} type={showPassword ? "text" : "password"} value={value}
+    <Input
+      label={label}
+      value={value}
       {...props}
+      type={showPassword ? "text" : "password"}
       endContent={
         <Button variant="ghost" size="sm" onPress={() => setShowPassword(!showPassword)} isIconOnly>
           <span className="material-symbols-outlined icon-sm">

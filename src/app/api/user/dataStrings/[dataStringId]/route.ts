@@ -1,5 +1,5 @@
-import { prisma } from "@/config/db";
-import { getSessionFromHeaders } from "@/utils";
+import { prisma } from "@/configs/db";
+import { getSessionFromHeaders } from "@/utils/auth";
 import { NextRequest, NextResponse } from "next/server";
 
 // DELETE /api/user/dataStrings/[dataStringId]

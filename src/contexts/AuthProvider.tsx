@@ -1,4 +1,4 @@
-import { auth } from "@/config/auth";
+import { auth } from "@/configs/auth";
 import { AuthProviderClient } from "@/contexts/AuthProviderClient";
 import { headers } from "next/headers";
 

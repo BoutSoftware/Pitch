@@ -1,11 +1,11 @@
 "use client";
 
-import { useSession } from '@/config/authClient';
+import { useSession } from '@/configs/authClient';
 import { decrypt, encrypt, extractParts, getPrfResult } from '@/services/encryption';
 import { Button } from '@heroui/button';
 import { Card, CardBody, CardFooter, CardHeader } from '@heroui/card';
 import { Input } from '@heroui/input';
-import { DataString } from '@prisma-gen/client';
+import { DataString } from '@prismaClient';
 import React from 'react';
 
 interface PasskeyIDs {

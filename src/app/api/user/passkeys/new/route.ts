@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/config/db';
+import { prisma } from '@/configs/db';
 import { generateRegistrationOptions, RegistrationResponseJSON, verifyRegistrationResponse } from '@simplewebauthn/server';
-import { BETTER_AUTH_URL } from '@/config';
-import { getSessionFromHeaders } from '@/utils';
+import { BETTER_AUTH_URL } from '@/configs';
+import { getSessionFromHeaders } from '@/utils/auth';
 import { isoBase64URL, isoUint8Array } from '@simplewebauthn/server/helpers';
 
 export async function GET(request: NextRequest) {

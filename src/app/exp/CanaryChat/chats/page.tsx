@@ -6,7 +6,7 @@ import { Chat } from "@prismaClient";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardHeader } from "@heroui/card";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/config/authClient";
+import { useSession } from "@/configs/authClient";
 
 interface ChatWithLatestMessage extends Chat {
   latestMessage: {

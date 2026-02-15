@@ -1,7 +1,7 @@
 "use client";
 
 import PasswordInput from '@/components/PasswordInput';
-import { authClient } from '@/config/authClient';
+import { authClient } from '@/configs/authClient';
 import { Button } from '@heroui/button';
 import { Input } from '@heroui/input';
 import { Link } from '@heroui/link';

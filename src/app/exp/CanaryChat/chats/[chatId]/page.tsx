@@ -179,6 +179,14 @@ export default function ChatPage({ params }: { params: Promise<{ chatId: string 
   );
 }
 
+/**
+ * A component to display a single chat message, with options to translate or listen to the message.
+ * If the message has a translation, it can be toggled to show the original text or the translation.
+ * The translation is shown in a popover when clicking on the text, and can include nested translation pieces for more detailed translations.
+ * 
+ * @param message The chat message to display
+ * @param updateMessage A function to update the message with new data, such as adding a translation after fetching it from the API
+ */
 function MessageCard({ message, updateMessage }: { message: ChatMessage, updateMessage: (updatedMessage: ChatMessage) => void }) {
   const [showTranslation, setShowTranslation] = useState(false);
   const [loading, setLoading] = useState({
@@ -234,15 +242,23 @@ function MessageCard({ message, updateMessage }: { message: ChatMessage, updateM
     setShowTranslation(true);
   };
 
+  const toggleTranslation = () => {
+    if (message.translation) {
+      setShowTranslation((prev) => !prev);
+    } else {
+      getTranslation();
+    }
+  };
+
   return (
-    <Card className={`max-w-[min(66vw,var(--container-lg))] p-1 shrink-0 ${stylesByRole[message.role]}`}>
+    <Card className={`max-w-[min(66vw,var(--container-2xl))] p-1 shrink-0 ${stylesByRole[message.role]}`}>
       <CardBody>
         {message.translation && showTranslation
           ? (
             <div className="">
               {message.translation.map((piece, index) => {
                 return (
-                  <TranslationPiecePopover key={index} piece={piece} />
+                  <TranslationPieceElement key={index} piece={piece} />
                 );
               })}
             </div>
@@ -252,12 +268,12 @@ function MessageCard({ message, updateMessage }: { message: ChatMessage, updateM
       </CardBody>
       <CardFooter className="justify-end gap-2 pt-0">
         <Button
-          variant="faded"
+          variant={showTranslation ? "light" : "faded"}
+          className={showTranslation ? "opacity-50" : ""}
           size="sm"
           isIconOnly
-          className={showTranslation ? "hidden" : ""}
           isLoading={loading.translating}
-          onPress={() => getTranslation()}
+          onPress={() => toggleTranslation()}
         >
           <span className="material-symbols-outlined">translate</span>
         </Button>
@@ -274,7 +290,15 @@ function MessageCard({ message, updateMessage }: { message: ChatMessage, updateM
   );
 }
 
-function TranslationPiecePopover({ piece }: { piece: TranslationPiece }) {
+/**
+ * A component to display a translation piece, which can be a full sentence, a phrase, or a single word.
+ * The translation is shown in a popover when clicking on the text.
+ * Line breaks are preserved and can be optionally rendered as actual breaks in the UI.
+ * 
+ * @param piece The translation piece to display
+ * @param displayLineBreaks Whether to render line breaks as actual breaks in the UI, or just include them in the text. Default is true.
+*/
+function TranslationPieceElement({ piece, displayLineBreaks = true }: { piece: TranslationPiece, displayLineBreaks?: boolean }) {
   return (
     <>
       {piece.text.split('\n').map((line, index) => (
@@ -289,7 +313,7 @@ function TranslationPiecePopover({ piece }: { piece: TranslationPiece }) {
               {(piece.translationPieces && piece.translationPieces.length >= 2) && (
                 <div className="mb-2 border-b border-foreground/20 pb-2">
                   {piece.translationPieces.map((subPiece, subIndex) => (
-                    <TranslationPiecePopover key={subIndex} piece={subPiece} />
+                    <TranslationPieceElement key={subIndex} piece={subPiece} displayLineBreaks={false} />
                   ))}
                 </div>
               )}
@@ -298,14 +322,16 @@ function TranslationPiecePopover({ piece }: { piece: TranslationPiece }) {
             </PopoverContent>
           </Popover >
           :
-          <br key={index} />
+          (displayLineBreaks && <br key={index} />)
       ))}
     </>
   );
 }
 
 /**
- * A button that opens a modal, which will show a translation interface, and will display the translated message and its pieces
+ * A button that opens a modal, which will show a translation interface, and will display the translated message and its pieces.
+ * 
+ * @param chatLanguage The target language of the chat, which will be the default translation language in the modal.
  */
 function TranslationHelperModal({ chatLanguage }: { chatLanguage: string }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -361,7 +387,7 @@ function TranslationHelperModal({ chatLanguage }: { chatLanguage: string }) {
                   {translationResult.pieces.map((piece, index) => {
 
                     return (
-                      <TranslationPiecePopover key={index} piece={piece} />
+                      <TranslationPieceElement key={index} piece={piece} />
                     )
                   })}
                 </div>

@@ -1,4 +1,5 @@
-import { GEMINI_API_KEY } from "@/config";
+import { GEMINI_API_KEY } from "@/configs";
+import { pcmToWav } from "@/utils/audio";
 import { ThinkingLevel } from "@google/genai";
 import { GoogleGenAI } from "@google/genai";
 import { Chat, ChatMessage, Message, TranslationPiece } from "@prismaClient";
@@ -11,7 +12,48 @@ enum models {
     GEMINI_F3_P = "gemini-3-flash-preview",
     GEMINI_F25 = "gemini-2.5-flash",
     GEMINI_F25_L = "gemini-2.5-flash-lite",
+    GEMINI_F25_P_TTS = "gemini-2.5-flash-preview-tts",
 }
+
+type AudioVoiceGender = 'male' | 'female' | 'neutral';
+
+const aiCharacterVoices = {
+    Zephyr: {
+        name: 'Zephyr',
+        gender: 'female' as AudioVoiceGender,
+        pitch: 'higher',
+        style: 'bright',
+        role: 'female character'
+    },
+    Callirrhoe: {
+        name: 'Callirrhoe',
+        gender: 'female' as AudioVoiceGender,
+        pitch: 'medium',
+        style: 'calm',
+        role: 'female secondary character'
+    },
+    Orus: {
+        name: 'Orus',
+        gender: 'male' as AudioVoiceGender,
+        pitch: 'medium',
+        style: 'firm',
+        role: 'male character'
+    },
+    Sadaltager: {
+        name: 'Sadaltager',
+        gender: 'male' as AudioVoiceGender,
+        pitch: 'medium-low',
+        style: 'calm',
+        role: 'male secondary character'
+    },
+    Enceladus: {
+        name: 'Enceladus',
+        gender: 'male' as AudioVoiceGender,
+        pitch: 'low',
+        style: 'breathy',
+        role: 'narrator'
+    }
+} as const;
 
 export const GEMINI_MODEL: models = models.GEMINI_F25_L;
 
@@ -38,14 +80,15 @@ export async function generateTranslationPieces(text: string, targetLanguage: st
                 If two words have meaning on their own, split them instead of joining them.
                 Only join words into a larger piece if the words don't make much sense on their own or they are a common phrase.
                 Don't include the original starting text as a piece, the first level should already be its translation pieces.
-                Even in the first level, the pieces should be as small as possible, preferably at the word level.
-                It seems obvious, but if a piece is in its minimal form, don't try to break it down further.
+                Even in the first array level, the pieces should be as small as possible.
+                Always prefer words as pieces, unless the words don't make sense on their own.
 
                 ## PUNCTUATION AND LINE BREAKS
-                Punctuation should be included in the text and translation, but as part of the piece it is attached to. Never as its own piece.
+                Every piece must be at least a word, never a single punctuation sign on its own. (, . ! ? \\n etc)
+                Punctuation must be included in the 'text' and 'translation', as part of the word it is attached to. Never as its own piece.
                 Every line break there exists, must be included. It must be part of the piece next to it.
                 Line breaks must be included at the end of the piece's "text" field.
-                Every piece must include text, never a single punctuation sign, space nor line break on its own.
+                
 
                 ## DYNAMIC INFORMATION
                 Target language to translate to: ${targetLanguage}
@@ -163,4 +206,51 @@ export async function generateMessage(chat: Chat & { Messages: Message[] }) {
     if (!response.text) throw new Error("No response from model");
 
     return response.text;
+}
+
+export async function generateTTS(message: ChatMessage, chat: Chat & { Messages?: Message[] }) {
+    // TODO: make the voice dynamic based on the scenario and the character the model is playing, not always zephyr
+    const voiceName = aiCharacterVoices.Zephyr.name;
+
+    const response = await googleGenAI.models.generateContent({
+        model: models.GEMINI_F25_P_TTS,
+        config: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+                voiceConfig: {
+                    prebuiltVoiceConfig: { voiceName: voiceName },
+                },
+            },
+        },
+        contents: [
+            {
+                text: `
+                You are an AI model generating a Text-to-Speech audio for a message in a conversation.
+                The user and you are role-playing in a specific scenario.
+                The user is the one in the specified scenario, and you are playing the other part in that scenario. 
+                The message you are generating the TTS for is a MODEL message, so it is your message, not the user's.
+                Generate a TTS audio that matches the content of the message, and also the scenario, language and level of the user.
+                The TTS should be engaging and expressive, matching the tone and style of the conversation and scenario.
+                Keep in mind the user's language level and try to make it appropriate for them.
+
+                User Scenario: ${chat.scenario}
+                User Language Level: ${chat.level}
+                Conversation Language: ${chat.language}
+
+                Message Text: ${message.text}
+            `,
+            }
+        ],
+    });
+
+    const data = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data as string | undefined;
+
+    if (!data) {
+        throw new Error('No audio data received from the model.');
+    }
+
+    const audioPcmBuffer = Buffer.from(data, 'base64');
+    const wavBuffer = await pcmToWav(audioPcmBuffer);
+
+    return wavBuffer;
 }

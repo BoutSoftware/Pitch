@@ -1,10 +1,10 @@
 "use client";
 
-import { useSession } from '@/config/authClient';
+import { useSession } from '@/configs/authClient';
 import { Button } from '@heroui/button';
 import { Spinner } from '@heroui/spinner';
 import { Card, CardBody, CardFooter, CardHeader } from '@heroui/card';
-import { Passkey } from '@prisma-gen/client';
+import { Passkey } from '@prismaClient';
 import { startRegistration } from '@simplewebauthn/browser';
 import { PublicKeyCredentialCreationOptionsJSON } from '@simplewebauthn/server';
 import React from 'react';
