@@ -13,5 +13,5 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
         {children}
       </ThemeProvider>
     </HeroUIProvider>
-  )
+  );
 }

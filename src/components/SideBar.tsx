@@ -1,9 +1,9 @@
 "use client";
 
 import { Button } from '@heroui/button';
-import { Listbox, ListboxProps } from '@heroui/listbox'
+import { Listbox, ListboxProps } from '@heroui/listbox';
 import { usePathname } from 'next/navigation';
-import React, { useEffect } from 'react'
+import React, { useEffect } from 'react';
 
 interface SideBarProps {
   sidebarId: string
@@ -17,21 +17,21 @@ interface SideBarProps {
 }
 
 export default function SideBar(props: SideBarProps) {
-  const pathname = usePathname()
-  const [isOpen, setIsOpen] = React.useState(true)
+  const pathname = usePathname();
+  const [isOpen, setIsOpen] = React.useState(true);
 
   const handleSidebarToggle = () => {
-    setIsOpen(!isOpen)
-    localStorage.setItem(props.sidebarId, JSON.stringify(!isOpen))
-  }
+    setIsOpen(!isOpen);
+    localStorage.setItem(props.sidebarId, JSON.stringify(!isOpen));
+  };
 
   // UseEffect to store and retrieve the desired sidebar state from local storage
   useEffect(() => {
-    const storedState = localStorage.getItem(props.sidebarId)
+    const storedState = localStorage.getItem(props.sidebarId);
     if (storedState) {
-      setIsOpen(JSON.parse(storedState))
+      setIsOpen(JSON.parse(storedState));
     }
-  }, [])
+  }, []);
 
   return (!props.excludedPaths?.some(path => path.test(pathname))) && (
     <Listbox
@@ -57,5 +57,5 @@ export default function SideBar(props: SideBarProps) {
     >
       {props.children}
     </Listbox>
-  )
+  );
 }

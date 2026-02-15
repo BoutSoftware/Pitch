@@ -1,18 +1,18 @@
-"use client"
+"use client";
 
-import { authClient } from '@/configs/authClient'
-import { Button } from '@heroui/button'
-import { Input } from '@heroui/input'
-import { Link } from '@heroui/link'
-import { useRouter } from 'next/navigation'
-import React from 'react'
+import { authClient } from '@/configs/authClient';
+import { Button } from '@heroui/button';
+import { Input } from '@heroui/input';
+import { Link } from '@heroui/link';
+import { useRouter } from 'next/navigation';
+import React from 'react';
 
 export default function AuthPage() {
   const [form, setForm] = React.useState({
     email: '',
     password: '',
     name: ''
-  })
+  });
   const router = useRouter();
 
   const handleSignIn = async () => {
@@ -25,14 +25,14 @@ export default function AuthPage() {
       onSuccess: () => {
         router.push('/exp/Auth/dashboard');
       }
-    })
+    });
 
     if (error) {
-      console.error("Sign Up Error:", error)
+      console.error("Sign Up Error:", error);
     } else {
-      console.log("Sign Up Success:", data)
+      console.log("Sign Up Success:", data);
     }
-  }
+  };
 
   return (
     <main className='p-8'>
@@ -49,5 +49,5 @@ export default function AuthPage() {
         Already have an account? <Link href="/exp/Auth/login">Login</Link>
       </p>
     </main>
-  )
+  );
 }

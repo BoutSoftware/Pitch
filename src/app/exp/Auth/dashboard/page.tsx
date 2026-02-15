@@ -4,8 +4,6 @@ import { signOut, useSession } from '@/configs/authClient';
 import { Button } from '@heroui/button';
 import { Link } from '@heroui/link';
 import { Spinner } from '@heroui/spinner';
-import { useRouter } from 'next/navigation';
-import React, { useEffect } from 'react';
 
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();

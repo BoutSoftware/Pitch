@@ -30,7 +30,7 @@ export async function GET() {
         const aDate = a.latestMessage ? a.latestMessage.createdAt : a.createdAt;
         const bDate = b.latestMessage ? b.latestMessage.createdAt : b.createdAt;
         return bDate.getTime() - aDate.getTime();
-    })
+    });
 
     return NextResponse.json({ data: sortedChats, code: "OK" }, { status: 200 });
 }

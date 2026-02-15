@@ -7,9 +7,9 @@ import { NextRequest, NextResponse } from "next/server";
  * @param req 
  * @returns 
  */
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
     const challenge = crypto.getRandomValues(new Uint8Array(32));
-    const options = {
+    const _options = {
         challenge: challenge,
         rp: {
             name: "Pitch",

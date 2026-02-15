@@ -26,6 +26,7 @@
 src/scripts/
 **/generated/prisma
 **/generated/
+.vscode/
 
 # debug
 npm-debug.log*

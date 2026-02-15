@@ -388,7 +388,7 @@ function TranslationHelperModal({ chatLanguage }: { chatLanguage: string }) {
 
                     return (
                       <TranslationPieceElement key={index} piece={piece} />
-                    )
+                    );
                   })}
                 </div>
               </div>

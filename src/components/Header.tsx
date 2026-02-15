@@ -1,6 +1,6 @@
-import React from 'react'
-import Link from 'next/link'
-import Image from 'next/image'
+import React from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 
 export default function Header({ startUrl = '/', navigation }: { startUrl?: string, navigation?: React.ReactNode }) {
   return (
@@ -19,6 +19,6 @@ export default function Header({ startUrl = '/', navigation }: { startUrl?: stri
       {/* Navigation */}
       {navigation}
     </div>
-  )
+  );
 }
 

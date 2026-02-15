@@ -1,7 +1,7 @@
 "use client";
 
 import { ThemeContext } from 'bout-themes';
-import React, { useContext } from 'react'
+import React, { useContext } from 'react';
 import { Switch, SwitchProps } from "@heroui/switch";
 
 export default function ThemeSwitch(props?: SwitchProps) {
@@ -20,5 +20,5 @@ export default function ThemeSwitch(props?: SwitchProps) {
       }
       {...props}
     />
-  )
+  );
 }

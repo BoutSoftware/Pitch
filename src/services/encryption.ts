@@ -100,7 +100,7 @@ async function decryptV1(dataString: string, key: string): Promise<string> {
     const parts = dataString.split(':');
     const [prfInputB64, ivB64, encryptedB64] = parts;
 
-    const prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
+    const _prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
     const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
     const encrypted = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
 
@@ -158,7 +158,7 @@ async function decryptV2(dataString: string, key: string): Promise<string> {
     const parts = dataString.split(':');
     const [prfInputB64, hkdfSaltB64, ivB64, encryptedB64] = parts;
 
-    const prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
+    const _prfInput = Uint8Array.from(atob(prfInputB64), c => c.charCodeAt(0));
     const hkdfSalt = Uint8Array.from(atob(hkdfSaltB64), c => c.charCodeAt(0));
     const iv = Uint8Array.from(atob(ivB64), c => c.charCodeAt(0));
     const encrypted = Uint8Array.from(atob(encryptedB64), c => c.charCodeAt(0));
@@ -208,7 +208,7 @@ export async function decrypt(dataString: string, key: string): Promise<string> 
 }
 
 export async function extractParts(dataString: string) {
-    const dataVersion = await getDataVersion(dataString)
+    const dataVersion = await getDataVersion(dataString);
     const versionEntry = versionMap[dataVersion];
 
     if (!versionEntry || !versionEntry.extractParts) {
