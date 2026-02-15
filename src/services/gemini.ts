@@ -208,7 +208,7 @@ export async function generateMessage(chat: Chat & { Messages: Message[] }) {
     return response.text;
 }
 
-export async function generateTTS(message: ChatMessage, chat: Chat & { Messages?: Message[] }) {
+export async function generateTTS(message: Message, chat: Partial<Chat>) {
     // TODO: make the voice dynamic based on the scenario and the character the model is playing, not always zephyr
     const voiceName = aiCharacterVoices.Zephyr.name;
 

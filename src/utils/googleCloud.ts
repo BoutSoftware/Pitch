@@ -1,9 +1,9 @@
 import { gcpBucket } from "@/configs/googleCloud";
 
-export async function getSignedUrl(fileId: string) {
+export async function getSignedUrl(fileId: string, expiresInSeconds: number = 3600) {
     return (await gcpBucket.file(fileId).getSignedUrl({
         action: "read",
-        expires: Date.now() + 1000 * 60 * 60 // 1 hour
+        expires: Date.now() + 1000 * expiresInSeconds,
     }))[0];
 }
 

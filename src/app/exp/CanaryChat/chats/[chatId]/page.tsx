@@ -1,4 +1,5 @@
 "use client";
+import { ApiResponse } from "@/types/api";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardFooter } from "@heroui/card";
 import { Textarea } from "@heroui/input";
@@ -191,6 +192,8 @@ function MessageCard({ message, updateMessage }: { message: ChatMessage, updateM
   const [showTranslation, setShowTranslation] = useState(false);
   const [loading, setLoading] = useState({
     translating: false,
+    generatingAudio: false,
+    playingAudio: false,
   });
 
   const stylesByRole = {
@@ -242,6 +245,68 @@ function MessageCard({ message, updateMessage }: { message: ChatMessage, updateM
     setShowTranslation(true);
   };
 
+  const playAudio = async () => {
+    setLoading((prev) => ({
+      ...prev,
+      generatingAudio: true,
+    }));
+
+    // if message.audio, fetch the signed URL
+    let audioUrl = "";
+    if (message.audio) {
+      const resBody: ApiResponse = await fetch(`/api/exp/CanaryChat/messages/${message.id}/audio`, {
+        method: 'GET',
+      }).then(res => res.json())
+        .catch((err) => { console.error('Error fetching audio URL', err); });
+
+      if (resBody.code !== "OK") {
+        console.error('Failed to fetch audio URL', resBody);
+        setLoading((prev) => ({
+          ...prev,
+          generatingAudio: false,
+        }));
+        return;
+      }
+
+      audioUrl = resBody.data.audioUrl;
+    }
+
+    // Else make a post request, get the audio URL from the response, update the message with the new audio URL
+    if (!audioUrl) {
+      const resBody: ApiResponse = await fetch(`/api/exp/CanaryChat/messages/${message.id}/audio`, {
+        method: 'POST',
+      }).then(res => res.json())
+        .catch((err) => { console.error('Error generating audio', err); });
+
+      if (resBody.code !== "OK") {
+        console.error('Failed to generate audio', resBody);
+        setLoading((prev) => ({
+          ...prev,
+          generatingAudio: false,
+        }));
+        return;
+      }
+
+      audioUrl = resBody.data.audio;
+      updateMessage({ ...message, audio: audioUrl });
+    }
+
+    // Finally, play the audio in the browser
+    setLoading((prev) => ({
+      ...prev,
+      generatingAudio: false,
+      playingAudio: true,
+    }));
+    const audio = new Audio(audioUrl);
+    audio.play();
+    audio.onended = () => {
+      setLoading((prev) => ({
+        ...prev,
+        playingAudio: false,
+      }));
+    };
+  };
+
   const toggleTranslation = () => {
     if (message.translation) {
       setShowTranslation((prev) => !prev);
@@ -278,10 +343,13 @@ function MessageCard({ message, updateMessage }: { message: ChatMessage, updateM
           <span className="material-symbols-outlined">translate</span>
         </Button>
         <Button
-          variant="faded"
+          variant={loading.playingAudio ? "bordered" : "faded"}
+          color={loading.playingAudio ? "primary" : "default"}
           size="sm"
           isIconOnly
-          onPress={() => alert('Listen feature not implemented yet')}
+          isLoading={loading.generatingAudio}
+          onPress={() => playAudio()}
+          // TODO: Add the stop functionality to stop the audio if it's already playing
         >
           <span className="material-symbols-outlined">volume_up</span>
         </Button>
@@ -364,7 +432,7 @@ function TranslationHelperModal({ chatLanguage }: { chatLanguage: string }) {
       <Button onPress={() => setIsOpen(true)} isIconOnly variant="faded">
         <span className="material-symbols-outlined">translate</span>
       </Button>
-      <Modal isOpen={isOpen} onOpenChange={setIsOpen}>
+      <Modal isOpen={isOpen} onOpenChange={setIsOpen} backdrop="blur">
         <ModalContent className="max-w-lg">
           <ModalHeader>
             <h2 className="text-xl font-bold mb-4">Translation Helper</h2>

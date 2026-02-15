@@ -102,6 +102,7 @@ model Message {
   role        Role
   text        String
   translation Json?
+  audio String? // Google Cloud Storage file ID for the TTS audio
 
   chatId String  @db.ObjectId
   userId String? @db.ObjectId

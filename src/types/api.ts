@@ -1,4 +1,5 @@
-export interface ApiResponse<DataType = unknown> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export interface ApiResponse<DataType = any> {
     code: ApiResponseCode;
     message: string;
     data?: DataType;
