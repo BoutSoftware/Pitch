@@ -4,11 +4,10 @@ loadEnvVars();
 
 // AUTH CONFIGURATION
 export const JWT_SECRET = process.env.JWT_SECRET || "";
-export const AUTH_SECRET = process.env.AUTH_SECRET || "";
+export const AUTH_URL = process.env.AUTH_URL || process.env.BETTER_AUTH_URL || "";
+export const AUTH_SECRET = process.env.AUTH_SECRET || process.env.BETTER_AUTH_SECRET || "";
 export const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
 export const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
-export const AUTH_URL = process.env.AUTH_URL || "";
-export const BETTER_AUTH_URL = process.env.BETTER_AUTH_URL || process.env.NEXT_PUBLIC_AUTH_URL || "";
 
 // SMTP CONFIGURATION
 export const EMAIL_SERVER = process.env.EMAIL_SERVER || "";
