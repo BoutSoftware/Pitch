@@ -24,8 +24,9 @@
 .DS_Store
 *.pem
 src/scripts/
-/generated/prisma
-/generated/
+**/generated/prisma
+**/generated/
+.vscode/
 
 # debug
 npm-debug.log*
@@ -43,3 +44,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+
+/generated/prisma

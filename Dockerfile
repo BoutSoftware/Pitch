@@ -10,7 +10,7 @@ RUN bun install
 COPY . .
 
 # ARG ENV_VARS
-# RUN echo "$ENV_VARS" > .env
+RUN echo "$ENV_VARS" > .env
 
 RUN bun run build
 
