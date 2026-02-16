@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/configs/db';
 import { generateRegistrationOptions, RegistrationResponseJSON, verifyRegistrationResponse } from '@simplewebauthn/server';
-import { BETTER_AUTH_URL } from '@/configs';
 import { getSessionFromHeaders } from '@/utils/auth';
 import { isoBase64URL, isoUint8Array } from '@simplewebauthn/server/helpers';
+import { AUTH_URL } from '@/configs';
 
 export async function GET(request: NextRequest) {
     try {
@@ -79,7 +79,7 @@ export async function POST(req: NextRequest) {
         const verification = await verifyRegistrationResponse({
             response: credential,
             expectedChallenge: challenge,
-            expectedOrigin: BETTER_AUTH_URL || 'http://localhost:3050',
+            expectedOrigin: AUTH_URL || 'http://localhost:3050',
             expectedRPID: req.nextUrl.hostname,
         });
 
