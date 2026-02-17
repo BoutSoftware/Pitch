@@ -1,0 +1,23 @@
+{
+    "name": "Canary",
+    "short_name": "Canary",
+    "description": "Canary is a language learning app where you can learn and practice by role-plaing in useful scenarios.",
+    "start_url": "/exp/CanaryChat",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#FFE97A",
+    "icons": [
+        {
+            "src": "/canary/logo.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml"
+        }
+    ],
+    "orientation": "portrait-primary",
+    "scope": "/exp/CanaryChat",
+    "categories": [
+        "education",
+        "productivity"
+    ],
+    "lang": "en-US"
+}

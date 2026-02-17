@@ -1,0 +1,23 @@
+{
+    "name": "Pitch",
+    "short_name": "Pitch",
+    "description": "Pitch is a music ear training app where you can learn and practice musical hearing through interactive exercises.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#000000",
+    "theme_color": "#7828c8",
+    "icons": [
+        {
+            "src": "/logo.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml"
+        }
+    ],
+    "orientation": "portrait-primary",
+    "scope": "/",
+    "categories": [
+        "education",
+        "music"
+    ],
+    "lang": "en-US"
+}
