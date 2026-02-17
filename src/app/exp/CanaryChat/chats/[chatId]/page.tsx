@@ -1,10 +1,12 @@
 "use client";
+import useStateRef from "@/hooks/useStateRef";
 import { ApiResponse } from "@/types/api";
 import { Button } from "@heroui/button";
 import { Card, CardBody, CardFooter } from "@heroui/card";
 import { Textarea } from "@heroui/input";
 import { Modal, ModalBody, ModalContent, ModalHeader } from "@heroui/modal";
 import { Popover, PopoverContent, PopoverTrigger } from "@heroui/popover";
+import { ScrollShadow } from "@heroui/scroll-shadow";
 import { Spinner } from "@heroui/spinner";
 import { Chat, ChatMessage, TranslationPiece } from "@prismaClient";
 import { useRouter } from "next/navigation";
@@ -106,7 +108,7 @@ export default function ChatPage({ params }: { params: Promise<{ chatId: string 
   }, [params]);
 
   return (
-    <main className="p-5 flex flex-1 flex-col h-screen overflow-hidden">
+    <main className="p-2 md:p-4 flex flex-1 flex-col h-dvh overflow-hidden">
       {/* Chat Header */}
       <div className="flex justify-between items-center">
         <div>
@@ -125,24 +127,26 @@ export default function ChatPage({ params }: { params: Promise<{ chatId: string 
       </div>
 
       {/* Chat Messages */}
-      <div className="gap-4 my-6 flex flex-col-reverse overflow-y-auto grow h-full px-2">
-        {loading.generating && (
-          <Spinner label="Generating response..." />
-        )}
+      <ScrollShadow className="my-4 sm:my-6 grow" size={30}>
+        <div className="gap-4 flex flex-col-reverse grow px-2">
+          {loading.generating && (
+            <Spinner label="Generating response..." />
+          )}
 
-        {messages?.map((message) => (
-          <MessageCard
-            key={message.id}
-            message={message}
-            updateMessage={(updatedMessage) => {
-              setMessages((prev) => {
-                if (!prev) return prev;
-                return prev.map((m) => m.id === updatedMessage.id ? updatedMessage : m);
-              });
-            }}
-          />
-        ))}
-      </div>
+          {messages?.map((message) => (
+            <MessageCard
+              key={message.id}
+              message={message}
+              updateMessage={(updatedMessage) => {
+                setMessages((prev) => {
+                  if (!prev) return prev;
+                  return prev.map((m) => m.id === updatedMessage.id ? updatedMessage : m);
+                });
+              }}
+            />
+          ))}
+        </div>
+      </ScrollShadow>
 
       {/* User Input */}
       <form onSubmit={postUserMessage}>
@@ -192,8 +196,6 @@ function MessageCard({ message, updateMessage }: { message: ChatMessage, updateM
   const [showTranslation, setShowTranslation] = useState(false);
   const [loading, setLoading] = useState({
     translating: false,
-    generatingAudio: false,
-    playingAudio: false,
   });
 
   const stylesByRole = {
@@ -245,68 +247,6 @@ function MessageCard({ message, updateMessage }: { message: ChatMessage, updateM
     setShowTranslation(true);
   };
 
-  const playAudio = async () => {
-    setLoading((prev) => ({
-      ...prev,
-      generatingAudio: true,
-    }));
-
-    // if message.audio, fetch the signed URL
-    let audioUrl = "";
-    if (message.audio) {
-      const resBody: ApiResponse = await fetch(`/api/exp/CanaryChat/messages/${message.id}/audio`, {
-        method: 'GET',
-      }).then(res => res.json())
-        .catch((err) => { console.error('Error fetching audio URL', err); });
-
-      if (resBody.code !== "OK") {
-        console.error('Failed to fetch audio URL', resBody);
-        setLoading((prev) => ({
-          ...prev,
-          generatingAudio: false,
-        }));
-        return;
-      }
-
-      audioUrl = resBody.data.audioUrl;
-    }
-
-    // Else make a post request, get the audio URL from the response, update the message with the new audio URL
-    if (!audioUrl) {
-      const resBody: ApiResponse = await fetch(`/api/exp/CanaryChat/messages/${message.id}/audio`, {
-        method: 'POST',
-      }).then(res => res.json())
-        .catch((err) => { console.error('Error generating audio', err); });
-
-      if (resBody.code !== "OK") {
-        console.error('Failed to generate audio', resBody);
-        setLoading((prev) => ({
-          ...prev,
-          generatingAudio: false,
-        }));
-        return;
-      }
-
-      audioUrl = resBody.data.audio;
-      updateMessage({ ...message, audio: audioUrl });
-    }
-
-    // Finally, play the audio in the browser
-    setLoading((prev) => ({
-      ...prev,
-      generatingAudio: false,
-      playingAudio: true,
-    }));
-    const audio = new Audio(audioUrl);
-    audio.play();
-    audio.onended = () => {
-      setLoading((prev) => ({
-        ...prev,
-        playingAudio: false,
-      }));
-    };
-  };
-
   const toggleTranslation = () => {
     if (message.translation) {
       setShowTranslation((prev) => !prev);
@@ -316,7 +256,7 @@ function MessageCard({ message, updateMessage }: { message: ChatMessage, updateM
   };
 
   return (
-    <Card className={`max-w-[min(66vw,var(--container-2xl))] p-1 shrink-0 ${stylesByRole[message.role]}`}>
+    <Card className={`max-w-[min(75vw,var(--container-2xl))] p-1 shrink-0 ${stylesByRole[message.role]}`}>
       <CardBody>
         {message.translation && showTranslation
           ? (
@@ -342,19 +282,188 @@ function MessageCard({ message, updateMessage }: { message: ChatMessage, updateM
         >
           <span className="material-symbols-outlined">translate</span>
         </Button>
-        <Button
-          variant={loading.playingAudio ? "bordered" : "faded"}
-          color={loading.playingAudio ? "primary" : "default"}
-          size="sm"
-          isIconOnly
-          isLoading={loading.generatingAudio}
-          onPress={() => playAudio()}
-          // TODO: Add the stop functionality to stop the audio if it's already playing
-        >
-          <span className="material-symbols-outlined">volume_up</span>
-        </Button>
+        <AudioButton message={message} />
       </CardFooter>
     </Card>
+  );
+}
+
+type AudioStatus = "idle" | "loading" | "playing" | "paused";
+const playbackRates = [1.3, 1.0, 0.7] as const;
+type PlaybackRate = typeof playbackRates[number];
+function AudioButton({ message }: { message: ChatMessage }) {
+  const [status, setStatus, statusRef] = useStateRef<AudioStatus>("idle");
+  const [playbackRate, setPlaybackRate] = useState<PlaybackRate>(1.0);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const [animationStep, setAnimationStep] = useState<0 | 1>(0); // to alternate between volume_up and volume_down icons for a simple animation effect
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
+
+  // to set an audio speed, we would need 
+
+  const getAudioUrl = async (): Promise<string | null> => {
+    if (audioUrl) {
+      return audioUrl;
+    }
+
+    if (message.audio) {
+      const resBody = await fetch(`/api/exp/CanaryChat/messages/${message.id}/audio`, {
+        method: 'GET',
+      }).then(res => res.json())
+        .catch((err) => { console.error('Error fetching audio URL', err); });
+
+      if (resBody.code !== "OK") {
+        console.error('Failed to fetch audio URL', resBody);
+        return null;
+      }
+
+      return resBody.data.audioUrl;
+    } else {
+      const resBody = await fetch(`/api/exp/CanaryChat/messages/${message.id}/audio`, {
+        method: 'POST',
+      }).then(res => res.json())
+        .catch((err) => { console.error('Error generating audio', err); });
+
+      if (resBody.code !== "OK") {
+        console.error('Failed to generate audio', resBody);
+        return null;
+      }
+
+      return resBody.data.audio;
+    }
+  };
+
+  const handlePress = async () => {
+    if (status === "playing") {
+      // if playing, pause
+      audioRef.current?.pause();
+      setStatus("paused");
+      return;
+    } else if (status === "paused") {
+      audioRef.current?.play();
+      setStatus("playing");
+      return;
+    } else if (status === "loading") {
+      return; // do nothing if already loading
+    }
+
+    setStatus("loading");
+    const url = await getAudioUrl();
+    if (!url) {
+      setStatus("idle");
+      return;
+    }
+    setAudioUrl(url);
+    const audio = new Audio(url);
+    audio.playbackRate = playbackRate;
+    audioRef.current = audio;
+    audio.play();
+    setStatus("playing");
+
+    audio.onended = () => {
+      setStatus("idle");
+      audioRef.current = null;
+    };
+    audio.onpause = () => {
+      if (statusRef.current === "playing") {
+        setStatus("paused");
+      }
+    };
+    audio.onplay = () => {
+      if (statusRef.current === "paused") {
+        setStatus("playing");
+      }
+    };
+  };
+
+  const handleSpeedChange = () => {
+    // cycle through 0.5x, 1x, and 1.5x speeds
+    const newSpeed = playbackRates[(playbackRates.indexOf(playbackRate) + 1) % playbackRates.length];
+    setPlaybackRate(newSpeed);
+    if (audioRef.current) {
+      audioRef.current.playbackRate = newSpeed;
+    }
+  };
+
+  const handleRestart = () => {
+    if (audioRef.current) {
+      audioRef.current.currentTime = 0;
+      audioRef.current.play();
+      setStatus("playing");
+    }
+  };
+
+  const skipTime = (seconds: number) => {
+    // negative or positive seconds to skip backward or forward
+    if (audioRef.current) {
+      // trust web audio element to handle edge cases of skipping beyond start or end of audio
+      audioRef.current.currentTime += seconds;
+    }
+
+    // // first check if we can skip forward/backward N seconds, if not, restart or end the audio
+    // if (audioRef.current) {
+    //   const newTime = audioRef.current.currentTime + seconds;
+    //   if (newTime < 0) {
+    //     handleRestart();
+    //   } else if (newTime > audioRef.current.duration) {
+    //     audioRef.current.pause();
+    //     audioRef.current.currentTime = audioRef.current.duration;
+    //     setStatus("idle");
+    //   } else {
+    //     audioRef.current.currentTime = newTime;
+    //   }
+    // }
+  };
+
+  // useeffect listening for status changes to start animation with an interval
+  useEffect(() => {
+    let animationInterval: NodeJS.Timeout;
+
+    if (status === "playing") {
+      animationInterval = setInterval(() => {
+        setAnimationStep((prev) => (prev === 0 ? 1 : 0));
+      }, 500); // change icon every 500ms
+    } else {
+      setAnimationStep(0); // reset to default icon when not playing
+    }
+
+    return () => {
+      if (animationInterval) clearInterval(animationInterval);
+    };
+  }, [status]);
+
+  return (
+    <div className="flex p-1" >
+      <Button
+        variant={["playing", "paused"].includes(status) ? "bordered" : "faded"}
+        color={["playing", "paused"].includes(status) ? "primary" : "default"}
+        size="sm"
+        isIconOnly
+        isLoading={status === "loading"}
+        onPress={handlePress}
+      >
+        <span className="material-symbols-outlined">
+          {(status === "playing") && (animationStep === 0 ? "volume_up" : "volume_down")}
+          {status === "paused" && "pause"}
+          {status === "idle" && "volume_up"}
+        </span>
+      </Button>
+
+
+      <div className={`flex gap-1 ml-1 **:transition-all transition-all ${status === "idle" ? "w-0 opacity-0 scale-0 **:scale-0 **:opacity-0" : "w-auto opacity-100 scale-100 **:scale-90 **:opacity-100"}`}>
+        <Button variant="flat" isIconOnly size="sm" onPress={handleSpeedChange} className={``}>
+          {playbackRate}x
+        </Button>
+        <Button variant="flat" isIconOnly size="sm" onPress={() => skipTime(-5)} className={``}>
+          <span className="material-symbols-outlined">replay_5</span>
+        </Button>
+        <Button variant="flat" isIconOnly size="sm" onPress={handleRestart} className={``}>
+          <span className="material-symbols-outlined">restart_alt</span>
+        </Button>
+        <Button variant="flat" isIconOnly size="sm" onPress={() => skipTime(5)} className={``}>
+          <span className="material-symbols-outlined">forward_5</span>
+        </Button>
+      </div>
+    </div>
   );
 }
 
