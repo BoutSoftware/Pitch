@@ -1,4 +1,12 @@
-import { Language } from "bout-themes/language";
+import { langConfig } from "@/contexts/LanguageProviderServer";
 
-export const appLanguages: Language[] = ['en', 'es'] as const;
-export const defaultLanguage = 'en' as const;
+export const {
+    LanguageProvider,
+    defaultLanguage,
+    appLanguages,
+    useTranslation,
+    createLanguageResources
+} = langConfig({
+    defaultLanguage: "en",
+    appLanguages: ["en", "es"]
+});

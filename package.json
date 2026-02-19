@@ -32,7 +32,7 @@
     "@simplewebauthn/server": "^13.2.2",
     "@types/wav": "^1.0.4",
     "better-auth": "^1.4.18",
-    "bout-themes": "^1.1.11",
+    "bout-themes": "^1.2.3",
     "dotenv": "^17.2.4",
     "framer-motion": "^12.33.0",
     "next": "^16.1.6",

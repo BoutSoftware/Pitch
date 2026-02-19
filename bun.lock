@@ -25,7 +25,7 @@
         "@simplewebauthn/server": "^13.2.2",
         "@types/wav": "^1.0.4",
         "better-auth": "^1.4.18",
-        "bout-themes": "^1.1.11",
+        "bout-themes": "^1.2.3",
         "dotenv": "^17.2.4",
         "framer-motion": "^12.33.0",
         "next": "^16.1.6",
@@ -671,7 +671,7 @@
 
     "bl": ["bl@4.1.0", "", { "dependencies": { "buffer": "^5.5.0", "inherits": "^2.0.4", "readable-stream": "^3.4.0" } }, "sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w=="],
 
-    "bout-themes": ["bout-themes@1.1.11", "", { "dependencies": { "react": "^18.3.1" } }, "sha512-3Alfrzc+fXJ+jpSSXDbKlmhLauLLmDTXjJMWLvyQ02CMcaMtl3HBeDBFuJzGfNTEmSJlpSE6yJ8TA0HpzVzZKQ=="],
+    "bout-themes": ["bout-themes@1.2.3", "", { "dependencies": { "react": "^18.3.1" } }, "sha512-MDBKnbl1WO7GmgyEIn/hio0ahsAkCDEPnMXblglPDSqnItSi+tpK2bLLw0SoyHakDD300iOmF0hWtsk+lO0XSw=="],
 
     "brace-expansion": ["brace-expansion@1.1.12", "", { "dependencies": { "balanced-match": "^1.0.0", "concat-map": "0.0.1" } }, "sha512-9T9UjW3r0UW5c1Q7GTwllptXwhvYmEzFhzMfZ9H7FQWt+uZePjZPjBP/W1ZEyZ1twGWom5/56TF4lPcqjnDHcg=="],
 

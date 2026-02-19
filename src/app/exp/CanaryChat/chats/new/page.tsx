@@ -5,8 +5,11 @@ import { Input, Textarea } from "@heroui/input";
 import { Select, SelectItem } from "@heroui/select";
 import { Button } from "@heroui/button";
 import { useRouter } from "next/navigation";
-
 import React, { useState } from "react";
+import { FLUENCY_LEVELS, LANGUAGES } from "@/types/languages";
+import { createChatPageTranslation, CreateChatPageTranslation } from "@/locales/Canary/createChat";
+import { Language } from "@/contexts/language";
+import { useTranslation } from "@/configs/lang";
 
 const SCENARIOS = [
   "I'm in a restaurant, talking to my date about our hobbies",
@@ -16,21 +19,19 @@ const SCENARIOS = [
   "I'm at a party, introducing myself to someone sitting next to me",
 ];
 
-const LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
-const LANGUAGES = ["Deutsch", "Español", "Français", "Italiano", "Português"];
-
 export default function NewChatPage() {
   const [form, setForm] = useState({
     title: "",
     scenario: SCENARIOS[0],
     customScenario: "",
-    language: LANGUAGES[0],
-    level: LEVELS[1],
+    language: LANGUAGES[2].id,
+    level: FLUENCY_LEVELS[1],
   });
   const [loading, setLoading] = useState(false);
+  const t = useTranslation<CreateChatPageTranslation>(createChatPageTranslation);
   const router = useRouter();
 
-  async function create(e: React.FormEvent) {
+  async function handleChatCreation(e: React.SubmitEvent) {
     e.preventDefault();
     if (loading) return;
 
@@ -68,10 +69,10 @@ export default function NewChatPage() {
     <main className="flex items-center justify-center min-h-screen bg-linear-to-br from-primary/10 to-primary/5 p-4">
       <Card className="w-full max-w-md">
         <CardHeader className="flex flex-col gap-3">
-          <h1 className="text-2xl font-bold">Create Chat</h1>
+          <h1 className="text-2xl font-bold">{t.cardTitle}</h1>
         </CardHeader>
         <CardBody className="gap-4">
-          <form onSubmit={create} className="flex flex-col gap-4">
+          <form onSubmit={handleChatCreation} className="flex flex-col gap-4">
             <Input
               label="Title"
               value={form.title}
@@ -106,10 +107,21 @@ export default function NewChatPage() {
               label="Language"
               selectedKeys={[form.language]}
               onChange={(e) => handleChange("language", e.target.value)}
+              renderValue={(items) => {
+                const selectedLanguage = LANGUAGES.find(lang => lang.id === items[0].textValue as Language);
+                if (!selectedLanguage) return null;
+
+                return (
+                  <span className="flex items-center gap-2">
+                    <span>{selectedLanguage.icon}</span>
+                    {selectedLanguage.name}
+                  </span>
+                )
+              }}
             >
-              {LANGUAGES.map((l) => (
-                <SelectItem key={l}>
-                  {l}
+              {LANGUAGES.map((languageItem) => (
+                <SelectItem key={languageItem.id} startContent={languageItem.icon} textValue={languageItem.id}>
+                  {languageItem.name}
                 </SelectItem>
               ))}
             </Select>
@@ -118,9 +130,9 @@ export default function NewChatPage() {
               selectedKeys={[form.level]}
               onChange={(e) => handleChange("level", e.target.value)}
             >
-              {LEVELS.map((lv) => (
-                <SelectItem key={lv}>
-                  {lv}
+              {FLUENCY_LEVELS.map((fluencyLevel) => (
+                <SelectItem key={fluencyLevel}>
+                  {fluencyLevel}
                 </SelectItem>
               ))}
             </Select>
@@ -130,6 +142,6 @@ export default function NewChatPage() {
           </form>
         </CardBody>
       </Card>
-    </main>
+    </main >
   );
 }

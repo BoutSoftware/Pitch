@@ -2,7 +2,7 @@ import { GEMINI_API_KEY } from "@/configs";
 import { pcmToWav } from "@/utils/audio";
 import { ThinkingLevel } from "@google/genai";
 import { GoogleGenAI } from "@google/genai";
-import { Chat, ChatMessage, Message, TranslationPiece } from "@prismaClient";
+import { Chat, Message, TranslationPiece } from "@prismaClient";
 
 export const googleGenAI = new GoogleGenAI({
     apiKey: GEMINI_API_KEY,

@@ -26,7 +26,7 @@ export default function ChatPage({ params }: { params: Promise<{ chatId: string 
   async function getChat() {
     const { chatId } = await params;
     const res = await fetch(`/api/exp/CanaryChat/chats/${chatId}`);
-    const resBody = await res.json();
+    const resBody = await res.json() as ApiResponse<Chat>;
 
     if (!res.ok) {
       console.error('Failed to fetch chat', resBody);
@@ -108,9 +108,9 @@ export default function ChatPage({ params }: { params: Promise<{ chatId: string 
   }, [params]);
 
   return (
-    <main className="p-2 md:p-4 flex flex-1 flex-col h-dvh overflow-hidden">
+    <main className="p-2 md:p-4 flex flex-1 flex-col h-screen overflow-hidden">
       {/* Chat Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center sticky top-0 bg-background/80 backdrop-blur z-10 py-2">
         <div>
           <div className="flex items-center gap-2">
             <Button isIconOnly variant="light" radius="full" onPress={() => router.push('/exp/CanaryChat/chats')}>
@@ -118,17 +118,17 @@ export default function ChatPage({ params }: { params: Promise<{ chatId: string 
             </Button>
             <h1 className="text-3xl font-bold">{chat?.title}</h1>
           </div>
-          <span className="text-sm text-foreground/50 block">{chat?.scenario}</span>
+          <span className="text-sm text-foreground/50 block w-full max-w-xs">{chat?.scenario}</span>
         </div>
 
-        <span className="text-sm text-foreground/50 block text-right">
-          Target Language: <br /> {chat?.language || "N/A"}
+        <span className="text-sm text-foreground/50 text-right ">
+          {chat?.language || "N/A"}
         </span>
       </div>
 
       {/* Chat Messages */}
-      <ScrollShadow className="my-4 sm:my-6 grow" size={30}>
-        <div className="gap-4 flex flex-col-reverse grow px-2">
+      <ScrollShadow className="my-4 sm:my-6 flex-1 flex">
+        <div className="gap-4 flex flex-col-reverse grow px-2 h-max">
           {loading.generating && (
             <Spinner label="Generating response..." />
           )}

@@ -1,3 +1,4 @@
+import { LanguageProvider } from "@/configs/lang";
 import { AuthProvider } from "@/contexts/AuthProvider";
 import { Metadata } from "next";
 
@@ -15,7 +16,9 @@ export default async function AuthLayout({
 }) {
   return (
     <AuthProvider>
-      {children}
+      <LanguageProvider>
+        {children}
+      </LanguageProvider>
     </AuthProvider>
   );
 }
